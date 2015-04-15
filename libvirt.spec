@@ -365,7 +365,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 1.2.13
-Release: 2%{?dist}%{?extra_release}
+Release: 3%{?dist}%{?extra_release}
 License: LGPLv2+
 Group: Development/Libraries
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
@@ -378,6 +378,21 @@ Source: http://libvirt.org/sources/%{?mainturl}libvirt-%{version}.tar.gz
 
 # Fix connecting to qemu:///session (bz #1198244)
 Patch0001: 0001-qemu-don-t-fill-in-nicindexes-for-session-mode-libvi.patch
+# Fix LXC domain startup (bz #1210397)
+Patch0002: 0002-lxc-create-the-required-directories-upon-driver-star.patch
+# Fix crash via identify object cleanup race (bz #1203030)
+Patch0003: 0003-rpc-Don-t-unref-identity-object-while-callbacks-stil.patch
+# Fix race starting multiple session daemons (bz #1200149)
+Patch0004: 0004-virNetSocketNewConnectUNIX-Use-flocks-when-spawning-.patch
+# Fix change-media success messages
+Patch0005: 0005-virsh-Improve-change-media-success-message.patch
+# Strip invalid control codes from XML (bz #1066564, bz #1184131)
+Patch0006: 0006-tests-rename-testStripIPv6BracketsData-to-testStripD.patch
+Patch0007: 0007-Add-functions-dealing-with-control-characters-in-str.patch
+Patch0008: 0008-Strip-control-characters-from-sysfs-attributes.patch
+Patch0009: 0009-Ignore-storage-volumes-with-control-codes-in-their-n.patch
+Patch0010: 0010-util-buffer-Add-support-for-adding-text-blocks-with-.patch
+Patch0011: 0011-Strip-control-codes-in-virBufferEscapeString.patch
 
 %if %{with_libvirtd}
 Requires: libvirt-daemon = %{version}-%{release}
@@ -2282,6 +2297,13 @@ exit 0
 %doc examples/systemtap
 
 %changelog
+* Wed Apr 15 2015 Cole Robinson <crobinso@redhat.com> - 1.2.13-3
+- Fix LXC domain startup (bz #1210397)
+- Fix crash via identify object cleanup race (bz #1203030)
+- Fix race starting multiple session daemons (bz #1200149)
+- Fix change-media success messages
+- Strip invalid control codes from XML (bz #1066564, bz #1184131)
+
 * Tue Mar 10 2015 Cole Robinson <crobinso@redhat.com> - 1.2.13-2
 - Fix connecting to qemu:///session (bz #1198244)
 
