@@ -337,6 +337,12 @@
 %endif
 
 
+# Advertise OVMF and AAVMF from nightly firmware repo
+%if 0%{?fedora}
+    %define with_loader_nvram --with-loader-nvram="/usr/share/edk2.git/ovmf-x64/OVMF_CODE-pure-efi.fd:/usr/share/edk2.git/ovmf-x64/OVMF_VARS-pure-efi.fd:/usr/share/edk2.git/aarch64/QEMU_EFI-pflash.raw:/usr/share/edk2.git/aarch64/vars-template-pflash.raw"
+%endif
+
+
 # The RHEL-5 Xen package has some feature backports. This
 # flag is set to enable use of those special bits on RHEL-5
 %if 0%{?rhel} == 5
@@ -364,8 +370,8 @@
 
 Summary: Library providing a simple virtualization API
 Name: libvirt
-Version: 1.2.13
-Release: 3%{?dist}%{?extra_release}
+Version: 1.2.13.1
+Release: 1%{?dist}%{?extra_release}
 License: LGPLv2+
 Group: Development/Libraries
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
@@ -375,24 +381,6 @@ URL: http://libvirt.org/
     %define mainturl stable_updates/
 %endif
 Source: http://libvirt.org/sources/%{?mainturl}libvirt-%{version}.tar.gz
-
-# Fix connecting to qemu:///session (bz #1198244)
-Patch0001: 0001-qemu-don-t-fill-in-nicindexes-for-session-mode-libvi.patch
-# Fix LXC domain startup (bz #1210397)
-Patch0002: 0002-lxc-create-the-required-directories-upon-driver-star.patch
-# Fix crash via identify object cleanup race (bz #1203030)
-Patch0003: 0003-rpc-Don-t-unref-identity-object-while-callbacks-stil.patch
-# Fix race starting multiple session daemons (bz #1200149)
-Patch0004: 0004-virNetSocketNewConnectUNIX-Use-flocks-when-spawning-.patch
-# Fix change-media success messages
-Patch0005: 0005-virsh-Improve-change-media-success-message.patch
-# Strip invalid control codes from XML (bz #1066564, bz #1184131)
-Patch0006: 0006-tests-rename-testStripIPv6BracketsData-to-testStripD.patch
-Patch0007: 0007-Add-functions-dealing-with-control-characters-in-str.patch
-Patch0008: 0008-Strip-control-characters-from-sysfs-attributes.patch
-Patch0009: 0009-Ignore-storage-volumes-with-control-codes-in-their-n.patch
-Patch0010: 0010-util-buffer-Add-support-for-adding-text-blocks-with-.patch
-Patch0011: 0011-Strip-control-codes-in-virBufferEscapeString.patch
 
 %if %{with_libvirtd}
 Requires: libvirt-daemon = %{version}-%{release}
@@ -1528,6 +1516,7 @@ rm -f po/stamp-po
            %{with_packager_version} \
            --with-qemu-user=%{qemu_user} \
            --with-qemu-group=%{qemu_group} \
+           %{?with_loader_nvram} \
            %{?enable_werror} \
            --enable-expensive-tests \
            %{init_scripts}
@@ -1979,9 +1968,6 @@ exit 0
 %dir %attr(0700, root, root) %{_localstatedir}/log/libvirt/qemu/
 %ghost %dir %attr(0700, root, root) %{_localstatedir}/run/libvirt/qemu/
 %dir %attr(0750, %{qemu_user}, %{qemu_group}) %{_localstatedir}/lib/libvirt/qemu/
-%dir %attr(0750, %{qemu_user}, %{qemu_group}) %{_localstatedir}/lib/libvirt/qemu/channel/
-%dir %attr(0750, %{qemu_user}, %{qemu_group}) %{_localstatedir}/lib/libvirt/qemu/channel/target/
-%dir %attr(0711, %{qemu_user}, %{qemu_group}) %{_localstatedir}/lib/libvirt/qemu/nvram/
 %dir %attr(0750, %{qemu_user}, %{qemu_group}) %{_localstatedir}/cache/libvirt/qemu/
 %{_datadir}/augeas/lenses/libvirtd_qemu.aug
 %{_datadir}/augeas/lenses/tests/test_libvirtd_qemu.aug
@@ -2082,9 +2068,6 @@ exit 0
 %config(noreplace) %{_sysconfdir}/logrotate.d/libvirtd.qemu
 %ghost %dir %attr(0700, root, root) %{_localstatedir}/run/libvirt/qemu/
 %dir %attr(0750, %{qemu_user}, %{qemu_group}) %{_localstatedir}/lib/libvirt/qemu/
-%dir %attr(0750, %{qemu_user}, %{qemu_group}) %{_localstatedir}/lib/libvirt/qemu/channel/
-%dir %attr(0750, %{qemu_user}, %{qemu_group}) %{_localstatedir}/lib/libvirt/qemu/channel/target/
-%dir %attr(0711, %{qemu_user}, %{qemu_group}) %{_localstatedir}/lib/libvirt/qemu/nvram/
 %dir %attr(0750, %{qemu_user}, %{qemu_group}) %{_localstatedir}/cache/libvirt/qemu/
 %{_datadir}/augeas/lenses/libvirtd_qemu.aug
 %{_datadir}/augeas/lenses/tests/test_libvirtd_qemu.aug
@@ -2297,6 +2280,19 @@ exit 0
 %doc examples/systemtap
 
 %changelog
+* Tue Apr 28 2015 Cole Robinson <crobinso@redhat.com> - 1.2.13.1-1
+- Rebased to version 1.2.13.1
+- Fix getVersion() after installing qemu (bz #1000116)
+- Fix autosocket setup with qemu:///session (bz #1044561, bz #1105274)
+- Ignore storage volumes with non-ascii in names (bz #1066564)
+- Don't generate invalid system nodedev XML (bz #1184131)
+- Fix crash via race when unrefing rpc identity object (bz #1203030)
+- Fix domcapabilities failure with ppc64le (bz #1209948)
+- Fix regression with 'virsh event ' (bz #1212620)
+- Add {Haswell,Broadwell}-noTSX CPU models (bz #1182650)
+- Don't lose VMs on libvirtd restart if qemu is uninstalled (bz #1099847)
+- Ignore storage volumes that libvirt can't open (bz #1103308)
+
 * Wed Apr 15 2015 Cole Robinson <crobinso@redhat.com> - 1.2.13-3
 - Fix LXC domain startup (bz #1210397)
 - Fix crash via identify object cleanup race (bz #1203030)
