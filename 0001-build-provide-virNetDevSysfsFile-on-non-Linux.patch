@@ -1,0 +1,40 @@
+From: Eric Blake <eblake@redhat.com>
+Date: Tue, 14 Apr 2015 13:53:04 -0600
+Subject: [PATCH] build: provide virNetDevSysfsFile on non-Linux
+
+Commit 49ed6cff is broken on mingw and other non-linux platforms:
+
+  CCLD     libvirt.la
+  Cannot export virNetDevSysfsFile: symbol not defined
+  collect2: error: ld returned 1 exit status
+
+* src/util/virnetdev.c: Provide virNetDevSysfsFile fallback.
+
+Signed-off-by: Eric Blake <eblake@redhat.com>
+(cherry picked from commit 58dfc5341432e5b510c441457a524b9d818ad63c)
+---
+ src/util/virnetdev.c | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+diff --git a/src/util/virnetdev.c b/src/util/virnetdev.c
+index 309fbb8..ebb4c5c 100644
+--- a/src/util/virnetdev.c
++++ b/src/util/virnetdev.c
+@@ -1777,6 +1777,17 @@ virNetDevGetVirtualFunctionInfo(const char *vfname ATTRIBUTE_UNUSED,
+                          _("Unable to get virtual function info on this platform"));
+     return -1;
+ }
++
++int
++virNetDevSysfsFile(char **pf_sysfs_device_link ATTRIBUTE_UNUSED,
++                   const char *ifname ATTRIBUTE_UNUSED,
++                   const char *file ATTRIBUTE_UNUSED)
++{
++    virReportSystemError(ENOSYS, "%s",
++                         _("Unable to get sysfs info on this platform"));
++    return -1;
++}
++
+ #endif /* !__linux__ */
+ #if defined(__linux__) && defined(HAVE_LIBNL) && defined(IFLA_VF_MAX)
+ 

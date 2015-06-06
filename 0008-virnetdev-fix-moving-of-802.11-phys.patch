@@ -1,0 +1,88 @@
+From: Lubomir Rintel <lkundrak@v3.sk>
+Date: Mon, 1 Jun 2015 20:40:23 +0200
+Subject: [PATCH] virnetdev: fix moving of 802.11 phys
+
+There was a couple of problems with the style fixes applied to the original
+patch:
+
+1.) virFileReadAllQuiet comparison was incorrectly parenthesized when moved
+into a condition, causing the len to be set to the result of comparison. This,
+together with the removed underflow check would underflow the phy buffer.
+
+2.) The logic was broken. Failure to call "ip" would abort the function, thus
+the "iw" branch would never be reached.
+
+This aims to fix the issues and work around possible style complains :)
+
+Signed-off-by: Lubomir Rintel <lkundrak@v3.sk>
+(cherry picked from commit 81b19ce46a9a65a00481403b8c0b15a8ac1367f2)
+---
+ src/util/virnetdev.c | 46 +++++++++++++++++++++-------------------------
+ 1 file changed, 21 insertions(+), 25 deletions(-)
+
+diff --git a/src/util/virnetdev.c b/src/util/virnetdev.c
+index e111a07..e2c9f9d 100644
+--- a/src/util/virnetdev.c
++++ b/src/util/virnetdev.c
+@@ -557,40 +557,36 @@ int virNetDevSetNamespace(const char *ifname, pid_t pidInNs)
+     char *phy_path = NULL;
+     int len;
+ 
+-    const char *argv[] = {
+-        "ip", "link", "set", ifname, "netns", NULL, NULL
+-    };
+-
+-    const char *iwargv[] = {
+-        "iw", "phy", NULL, "set", "netns", NULL, NULL
+-    };
+-
+     if (virAsprintf(&pid, "%lld", (long long) pidInNs) == -1)
+         return -1;
+ 
+-    argv[5] = pid;
+-    if (virRun(argv, NULL) < 0)
+-        goto cleanup;
+-
+     /* The 802.11 wireless devices only move together with their PHY. */
+     if (virNetDevSysfsFile(&phy_path, ifname, "phy80211/name") < 0)
+         goto cleanup;
+ 
+-    if ((len = virFileReadAllQuiet(phy_path, 1024, &phy) < 0)) {
+-        if (errno == ENOENT) {
+-            /* Okay, this is not a wireless card. Claim success. */
+-            ret = 0;
+-        }
+-        goto cleanup;
+-    }
++    if ((len = virFileReadAllQuiet(phy_path, 1024, &phy)) <= 0) {
++        /* Not a wireless device. */
++        const char *argv[] = {
++            "ip", "link", "set", ifname, "netns", NULL, NULL
++        };
+ 
+-    /* Remove a line break. */
+-    phy[len - 1] = '\0';
++        argv[5] = pid;
++        if (virRun(argv, NULL) < 0)
++            goto cleanup;
+ 
+-    iwargv[2] = phy;
+-    iwargv[5] = pid;
+-    if (virRun(iwargv, NULL) < 0)
+-        goto cleanup;
++    } else {
++        const char *argv[] = {
++            "iw", "phy", NULL, "set", "netns", NULL, NULL
++        };
++
++        /* Remove a line break. */
++        phy[len - 1] = '\0';
++
++        argv[2] = phy;
++        argv[5] = pid;
++        if (virRun(argv, NULL) < 0)
++            goto cleanup;
++    }
+ 
+     ret = 0;
+  cleanup:

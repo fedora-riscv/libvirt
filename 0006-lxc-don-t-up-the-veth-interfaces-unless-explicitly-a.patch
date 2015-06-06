@@ -1,0 +1,55 @@
+From: Lubomir Rintel <lkundrak@v3.sk>
+Date: Fri, 24 Apr 2015 15:52:56 +0200
+Subject: [PATCH] lxc: don't up the veth interfaces unless explicitly asked to
+
+Upping an interface for no reason and not configuring it is a cardinal sin.
+
+With the default addrgenmode if eui64 it sticks a link-local address to the
+interface. That is not good, as NetworkManager would see an address configured,
+assume the interface is already configured and won't touch it iself and the
+interface might stay unconfigured until the end of the days.
+
+Resolves: https://bugzilla.redhat.com/show_bug.cgi?id=1124721
+
+Signed-off-by: Michal Privoznik <mprivozn@redhat.com>
+(cherry picked from commit c3cf3c43a0bb2e0e4909c32821e20f607635ec85)
+---
+ src/lxc/lxc_container.c |  3 ++-
+ src/lxc/lxc_native.c    | 10 ++++------
+ 2 files changed, 6 insertions(+), 7 deletions(-)
+
+diff --git a/src/lxc/lxc_container.c b/src/lxc/lxc_container.c
+index cc20b6d..9a9ae5c 100644
+--- a/src/lxc/lxc_container.c
++++ b/src/lxc/lxc_container.c
+@@ -541,7 +541,8 @@ static int lxcContainerRenameAndEnableInterfaces(virDomainDefPtr vmDef,
+             VIR_FREE(ipStr);
+         }
+ 
+-        if (netDef->linkstate != VIR_DOMAIN_NET_INTERFACE_LINK_STATE_DOWN) {
++        if (netDef->nips ||
++            netDef->linkstate == VIR_DOMAIN_NET_INTERFACE_LINK_STATE_UP) {
+             VIR_DEBUG("Enabling %s", newname);
+             rc = virNetDevSetOnline(newname, true);
+             if (rc < 0)
+diff --git a/src/lxc/lxc_native.c b/src/lxc/lxc_native.c
+index abf07ce..434523a 100644
+--- a/src/lxc/lxc_native.c
++++ b/src/lxc/lxc_native.c
+@@ -348,12 +348,10 @@ lxcCreateNetDef(const char *type,
+     if (VIR_ALLOC(net) < 0)
+         goto error;
+ 
+-    if (flag) {
+-        if (STREQ(flag, "up"))
+-            net->linkstate = VIR_DOMAIN_NET_INTERFACE_LINK_STATE_UP;
+-        else
+-            net->linkstate = VIR_DOMAIN_NET_INTERFACE_LINK_STATE_DOWN;
+-    }
++    if (STREQ_NULLABLE(flag, "up"))
++        net->linkstate = VIR_DOMAIN_NET_INTERFACE_LINK_STATE_UP;
++    else
++        net->linkstate = VIR_DOMAIN_NET_INTERFACE_LINK_STATE_DOWN;
+ 
+     if (VIR_STRDUP(net->ifname_guest, name) < 0)
+         goto error;

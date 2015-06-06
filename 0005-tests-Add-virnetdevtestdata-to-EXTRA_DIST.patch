@@ -1,0 +1,27 @@
+From: Michal Privoznik <mprivozn@redhat.com>
+Date: Wed, 15 Apr 2015 10:09:52 +0200
+Subject: [PATCH] tests: Add virnetdevtestdata to EXTRA_DIST
+
+In one of my previous commits (49ed6cff9) I've introduced a test
+among with some files stored under virnetdevtestdata folder.
+While this works perfectly within a git tree, the folder was not
+getting into .tar.gz and therefore the dist-check would fail.
+
+Signed-off-by: Michal Privoznik <mprivozn@redhat.com>
+(cherry picked from commit 598f3fddbc0a9e9c16bb0554ff1481d3250c7d00)
+---
+ tests/Makefile.am | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/tests/Makefile.am b/tests/Makefile.am
+index 2dd0088..3af12b6 100644
+--- a/tests/Makefile.am
++++ b/tests/Makefile.am
+@@ -132,6 +132,7 @@ EXTRA_DIST =		\
+ 	vboxsnapshotxmldata \
+ 	virsh-uriprecedence \
+ 	virfiledata \
++	virnetdevtestdata \
+ 	virpcitestdata \
+ 	virscsidata \
+ 	virusbtestdata \
