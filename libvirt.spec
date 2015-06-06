@@ -13,7 +13,7 @@
 # Default to skipping autoreconf.  Distros can change just this one line
 # (or provide a command-line override) if they backport any patches that
 # touch configure.ac or Makefile.am.
-%{!?enable_autotools:%define enable_autotools 0}
+%{!?enable_autotools:%define enable_autotools 1}
 
 # A client only build will create a libvirt.so only containing
 # the generic RPC driver, and test driver and no libvirtd
@@ -363,7 +363,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 1.2.9.3
-Release: 1%{?dist}%{?extra_release}
+Release: 2%{?dist}%{?extra_release}
 License: LGPLv2+
 Group: Development/Libraries
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
@@ -380,6 +380,8 @@ Patch0002: 0002-PowerPC-Add-support-for-launching-VM-in-compat-mode.patch
 Patch0003: 0003-PowerPC-Improve-PVR-handling-to-fall-back-to-cpu-gen.patch
 Patch0004: 0004-docs-Add-documentation-for-compat-mode.patch
 Patch0005: 0005-Test-Add-a-testcase-for-PowerPC-compat-mode-cpu-spec.patch
+# polkit: Allow password-less access for 'libvirt' group (bz #957300)
+Patch0006: 0006-polkit-Allow-password-less-access-for-libvirt-group.patch
 
 %if %{with_libvirtd}
 Requires: libvirt-daemon = %{version}-%{release}
@@ -1211,6 +1213,8 @@ driver
 %patch0003 -p1
 %patch0004 -p1
 %patch0005 -p1
+# polkit: Allow password-less access for 'libvirt' group (bz #957300)
+%patch0006 -p1
 
 %build
 %if ! %{with_xen}
@@ -1597,9 +1601,9 @@ then
 fi
 
 %if %{with_libvirtd}
+%pre daemon
     %if ! %{with_driver_modules}
         %if %{with_qemu}
-%pre daemon
             %if 0%{?fedora} || 0%{?rhel} >= 6
 # We want soft static allocation of well-known ids, as disk images
 # are commonly shared across NFS mounts by id rather than name; see
@@ -1613,10 +1617,20 @@ if ! getent passwd qemu >/dev/null; then
     useradd -r -g qemu -G kvm -d / -s /sbin/nologin -c "qemu user" qemu
   fi
 fi
-exit 0
             %endif
         %endif
     %endif
+
+    %if %{with_polkit}
+        %if 0%{?fedora} || 0%{?rhel} >= 6
+# 'libvirt' group is just to allow password-less polkit access to
+# libvirtd. The uid number is irrelevant, so we use dynamic allocation
+# described at the above link.
+getent group libvirt >/dev/null || groupadd -r libvirt
+        %endif
+    %endif
+
+exit 0
 
 %post daemon
 
@@ -1933,6 +1947,7 @@ exit 0
         %if 0%{?fedora} || 0%{?rhel} >= 6
 %{_datadir}/polkit-1/actions/org.libvirt.unix.policy
 %{_datadir}/polkit-1/actions/org.libvirt.api.policy
+%{_datadir}/polkit-1/rules.d/50-libvirt.rules
         %else
 %{_datadir}/PolicyKit/policy/org.libvirt.unix.policy
         %endif
@@ -2282,6 +2297,9 @@ exit 0
 %doc examples/systemtap
 
 %changelog
+* Fri Jun 05 2015 Cole Robinson <crobinso@redhat.com> - 1.2.9.3-2
+- polkit: Allow password-less access for 'libvirt' group (bz #957300)
+
 * Tue Apr 28 2015 Cole Robinson <crobinso@redhat.com> - 1.2.9.3-1
 - Rebased to version 1.2.9.3
 - Fix getVersion() after installing qemu (bz #1000116)
