@@ -371,7 +371,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 1.2.13.1
-Release: 2%{?dist}%{?extra_release}
+Release: 3%{?dist}%{?extra_release}
 License: LGPLv2+
 Group: Development/Libraries
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
@@ -394,6 +394,11 @@ Patch0008: 0008-virnetdev-fix-moving-of-802.11-phys.patch
 
 # polkit: Allow password-less access for 'libvirt' group (bz #957300)
 Patch0101: 0101-polkit-Allow-password-less-access-for-libvirt-group.patch
+# Add sanity checks for drive mirroring (bz #1263438)
+Patch0102: 0102-qemu-process-Export-qemuProcessFindDomainDiskByAlias.patch
+Patch0103: 0103-qemu-event-Don-t-fiddle-with-disk-backing-trees-with.patch
+Patch0104: 0104-qemu-Disallow-concurrent-block-jobs-on-a-single-disk.patch
+Patch0105: 0105-qemu-block-commit-Mark-disk-in-block-jobs-only-on-su.patch
 
 %if %{with_libvirtd}
 Requires: libvirt-daemon = %{version}-%{release}
@@ -2304,6 +2309,9 @@ exit 0
 %doc examples/systemtap
 
 %changelog
+* Mon Sep 21 2015 Cole Robinson <crobinso@redhat.com> - 1.2.13.1-3
+- Add sanity checks for drive mirroring (bz #1263438)
+
 * Fri Jun 05 2015 Cole Robinson <crobinso@redhat.com> - 1.2.13.1-2
 - lxc network fixes (bz #1225591, bz #1225593, bz #1225594)
 - polkit: Allow password-less access for 'libvirt' group (bz #957300)

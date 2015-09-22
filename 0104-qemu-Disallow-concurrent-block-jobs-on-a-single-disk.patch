@@ -1,0 +1,175 @@
+From: Peter Krempa <pkrempa@redhat.com>
+Date: Fri, 13 Mar 2015 17:22:04 +0100
+Subject: [PATCH] qemu: Disallow concurrent block jobs on a single disk
+
+While qemu may be prepared to do this libvirt is not. Forbid the block
+ops until we fix our code.
+
+(cherry picked from commit 51f9f03a4ca50b070c0fbfb29748d49f583e15e1)
+---
+ src/conf/domain_conf.h |  4 ++++
+ src/qemu/qemu_domain.c | 23 +++++++++++++++++++++++
+ src/qemu/qemu_domain.h |  2 ++
+ src/qemu/qemu_driver.c | 28 +++++++++++++---------------
+ 4 files changed, 42 insertions(+), 15 deletions(-)
+
+diff --git a/src/conf/domain_conf.h b/src/conf/domain_conf.h
+index bca1b94..47bdb61 100644
+--- a/src/conf/domain_conf.h
++++ b/src/conf/domain_conf.h
+@@ -664,6 +664,10 @@ struct _virDomainDiskDef {
+     int tray_status; /* enum virDomainDiskTray */
+     int removable; /* enum virTristateSwitch */
+ 
++    /* ideally we want a smarter way to interlock block jobs on single qemu disk
++     * in the future, but for now we just disallow any concurrent job on a
++     * single disk */
++    bool blockjob;
+     virStorageSourcePtr mirror;
+     int mirrorState; /* enum virDomainDiskMirrorState */
+     int mirrorJob; /* virDomainBlockJobType */
+diff --git a/src/qemu/qemu_domain.c b/src/qemu/qemu_domain.c
+index bd7d8a4..7c2d046 100644
+--- a/src/qemu/qemu_domain.c
++++ b/src/qemu/qemu_domain.c
+@@ -2757,6 +2757,29 @@ qemuDomainDetermineDiskChain(virQEMUDriverPtr driver,
+     return ret;
+ }
+ 
++
++bool
++qemuDomainDiskBlockJobIsActive(virDomainDiskDefPtr disk)
++{
++    if (disk->mirror) {
++        virReportError(VIR_ERR_BLOCK_COPY_ACTIVE,
++                       _("disk '%s' already in active block job"),
++                       disk->dst);
++
++        return true;
++    }
++
++    if (disk->blockjob) {
++        virReportError(VIR_ERR_OPERATION_UNSUPPORTED,
++                       _("disk '%s' already in active block job"),
++                       disk->dst);
++        return true;
++    }
++
++    return false;
++}
++
++
+ int
+ qemuDomainUpdateDeviceList(virQEMUDriverPtr driver,
+                            virDomainObjPtr vm,
+diff --git a/src/qemu/qemu_domain.h b/src/qemu/qemu_domain.h
+index a7ebb47..41e075b 100644
+--- a/src/qemu/qemu_domain.h
++++ b/src/qemu/qemu_domain.h
+@@ -414,6 +414,8 @@ int qemuDomainJobInfoToParams(qemuDomainJobInfoPtr jobInfo,
+     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2)
+     ATTRIBUTE_NONNULL(3) ATTRIBUTE_NONNULL(4);
+ 
++bool qemuDomainDiskBlockJobIsActive(virDomainDiskDefPtr disk);
++
+ void qemuDomObjEndAPI(virDomainObjPtr *vm);
+ 
+ #endif /* __QEMU_DOMAIN_H__ */
+diff --git a/src/qemu/qemu_driver.c b/src/qemu/qemu_driver.c
+index 2e8c9d8..3ec057b 100644
+--- a/src/qemu/qemu_driver.c
++++ b/src/qemu/qemu_driver.c
+@@ -4569,6 +4569,7 @@ processBlockJobEvent(virQEMUDriverPtr driver,
+             disk->mirrorJob = VIR_DOMAIN_BLOCK_JOB_TYPE_UNKNOWN;
+             ignore_value(qemuDomainDetermineDiskChain(driver, vm, disk,
+                                                       true, true));
++            disk->blockjob = false;
+             break;
+ 
+         case VIR_DOMAIN_BLOCK_JOB_READY:
+@@ -4584,6 +4585,7 @@ processBlockJobEvent(virQEMUDriverPtr driver,
+                 VIR_DOMAIN_DISK_MIRROR_STATE_ABORT : VIR_DOMAIN_DISK_MIRROR_STATE_NONE;
+             disk->mirrorJob = VIR_DOMAIN_BLOCK_JOB_TYPE_UNKNOWN;
+             save = true;
++            disk->blockjob = false;
+             break;
+ 
+         case VIR_DOMAIN_BLOCK_JOB_LAST:
+@@ -15827,6 +15829,7 @@ qemuDomainBlockPivot(virConnectPtr conn,
+         disk->mirror = NULL;
+         disk->mirrorState = VIR_DOMAIN_DISK_MIRROR_STATE_NONE;
+         disk->mirrorJob = VIR_DOMAIN_BLOCK_JOB_TYPE_UNKNOWN;
++        disk->blockjob = false;
+     }
+     if (virDomainSaveStatus(driver->xmlopt, cfg->stateDir, vm) < 0)
+         ret = -1;
+@@ -15927,12 +15930,9 @@ qemuDomainBlockJobImpl(virDomainObjPtr vm,
+         goto endjob;
+     disk = vm->def->disks[idx];
+ 
+-    if (mode == BLOCK_JOB_PULL && disk->mirror) {
+-        virReportError(VIR_ERR_BLOCK_COPY_ACTIVE,
+-                       _("disk '%s' already in active block job"),
+-                       disk->dst);
++    if (mode == BLOCK_JOB_PULL && qemuDomainDiskBlockJobIsActive(disk))
+         goto endjob;
+-    }
++
+     if (mode == BLOCK_JOB_ABORT) {
+         if ((flags & VIR_DOMAIN_BLOCK_JOB_ABORT_PIVOT) &&
+             !(async && disk->mirror)) {
+@@ -16017,6 +16017,8 @@ qemuDomainBlockJobImpl(virDomainObjPtr vm,
+         if (mode == BLOCK_JOB_ABORT && disk->mirror)
+             disk->mirrorState = VIR_DOMAIN_DISK_MIRROR_STATE_NONE;
+         goto endjob;
++    } else if (mode == BLOCK_JOB_PULL) {
++        disk->blockjob = true;
+     }
+ 
+  waitjob:
+@@ -16269,12 +16271,8 @@ qemuDomainBlockCopyCommon(virDomainObjPtr vm,
+     if (!device)
+         goto endjob;
+     disk = vm->def->disks[idx];
+-    if (disk->mirror) {
+-        virReportError(VIR_ERR_BLOCK_COPY_ACTIVE,
+-                       _("disk '%s' already in active block job"),
+-                       disk->dst);
++    if (qemuDomainDiskBlockJobIsActive(disk))
+         goto endjob;
+-    }
+ 
+     if (!(virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_DRIVE_MIRROR) &&
+           virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_BLOCKJOB_ASYNC))) {
+@@ -16396,6 +16394,7 @@ qemuDomainBlockCopyCommon(virDomainObjPtr vm,
+     disk->mirror = mirror;
+     mirror = NULL;
+     disk->mirrorJob = VIR_DOMAIN_BLOCK_JOB_TYPE_COPY;
++    disk->blockjob = true;
+ 
+     if (virDomainSaveStatus(driver->xmlopt, cfg->stateDir, vm) < 0)
+         VIR_WARN("Unable to save status on vm %s after state change",
+@@ -16657,12 +16656,9 @@ qemuDomainBlockCommit(virDomainPtr dom,
+                        disk->dst);
+         goto endjob;
+     }
+-    if (disk->mirror) {
+-        virReportError(VIR_ERR_BLOCK_COPY_ACTIVE,
+-                       _("disk '%s' already in active block job"),
+-                       disk->dst);
++
++    if (qemuDomainDiskBlockJobIsActive(disk))
+         goto endjob;
+-    }
+     if (qemuDomainDetermineDiskChain(driver, vm, disk, false, true) < 0)
+         goto endjob;
+ 
+@@ -16785,6 +16781,8 @@ qemuDomainBlockCommit(virDomainPtr dom,
+         goto endjob;
+     }
+ 
++    disk->blockjob = true;
++
+     if (mirror) {
+         if (ret == 0) {
+             virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
