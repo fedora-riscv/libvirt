@@ -2,7 +2,7 @@
 
 # This spec file assumes you are building for Fedora 13 or newer,
 # or for RHEL 5 or newer. It may need some tweaks for other distros.
-# If neither fedora nor rhel was defined, try to guess them from %{dist}
+# If neither fedora nor rhel was defined, try to guess them from dist
 %if !0%{?rhel} && !0%{?fedora}
 %{expand:%(echo "%{?dist}" | \
   sed -ne 's/^\.el\([0-9]\+\).*/%%define rhel \1/p')}
@@ -13,13 +13,13 @@
 # Default to skipping autoreconf.  Distros can change just this one line
 # (or provide a command-line override) if they backport any patches that
 # touch configure.ac or Makefile.am.
-%{!?enable_autotools:%define enable_autotools 0}
+%{!?enable_autotools:%global enable_autotools 0}
 
 # A client only build will create a libvirt.so only containing
 # the generic RPC driver, and test driver and no libvirtd
 # Default to a full server + client build, but with the possibility
 # of a command-line or ~/.rpmmacros override for client-only.
-%{!?client_only:%define client_only 0}
+%{!?client_only:%global client_only 0}
 
 # Now turn off server build in certain cases
 
@@ -378,7 +378,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 1.2.18.1
-Release: 1%{?dist}%{?extra_release}
+Release: 2%{?dist}%{?extra_release}
 License: LGPLv2+
 Group: Development/Libraries
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
@@ -388,6 +388,11 @@ URL: http://libvirt.org/
     %define mainturl stable_updates/
 %endif
 Source: http://libvirt.org/sources/%{?mainturl}libvirt-%{version}.tar.gz
+
+# Fix qemu.conf dynamic_ownership=0 (bz #1266628)
+Patch0001: 0001-qemu-Fix-dynamic_ownership-qemu.conf-setting.patch
+# Fix some spec file warnings
+Patch0002: 0002-spec-Fix-some-warnings-with-latest-rpmbuild.patch
 
 %if %{with_libvirtd}
 Requires: libvirt-daemon = %{version}-%{release}
@@ -2330,6 +2335,10 @@ exit 0
 %doc examples/systemtap
 
 %changelog
+* Tue Oct 06 2015 Cole Robinson <crobinso@redhat.com> - 1.2.18.1-2
+- Fix qemu.conf dynamic_ownership=0 (bz #1266628)
+- Fix some spec file warnings
+
 * Mon Sep 21 2015 Cole Robinson <crobinso@redhat.com> - 1.2.18.1-1
 - Rebased to version 1.2.18.1
 - libvirt reports physical=0 for COW2 volumes on block storage (bz #1253754)
