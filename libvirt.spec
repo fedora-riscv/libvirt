@@ -370,8 +370,8 @@
 
 Summary: Library providing a simple virtualization API
 Name: libvirt
-Version: 1.2.13.1
-Release: 3%{?dist}%{?extra_release}
+Version: 1.2.13.2
+Release: 1%{?dist}%{?extra_release}
 License: LGPLv2+
 Group: Development/Libraries
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
@@ -382,23 +382,8 @@ URL: http://libvirt.org/
 %endif
 Source: http://libvirt.org/sources/%{?mainturl}libvirt-%{version}.tar.gz
 
-# lxc network fixes (bz #1225591, bz #1225593, bz #1225594)
-Patch0001: 0001-build-provide-virNetDevSysfsFile-on-non-Linux.patch
-Patch0002: 0002-Introduce-virnetdevtest.patch
-Patch0003: 0003-Cleanup-sys-class-net-usage.patch
-Patch0004: 0004-lxc-move-wireless-PHYs-to-a-network-namespace.patch
-Patch0005: 0005-tests-Add-virnetdevtestdata-to-EXTRA_DIST.patch
-Patch0006: 0006-lxc-don-t-up-the-veth-interfaces-unless-explicitly-a.patch
-Patch0007: 0007-interface-don-t-error-out-if-a-bond-has-no-interface.patch
-Patch0008: 0008-virnetdev-fix-moving-of-802.11-phys.patch
-
 # polkit: Allow password-less access for 'libvirt' group (bz #957300)
-Patch0101: 0101-polkit-Allow-password-less-access-for-libvirt-group.patch
-# Add sanity checks for drive mirroring (bz #1263438)
-Patch0102: 0102-qemu-process-Export-qemuProcessFindDomainDiskByAlias.patch
-Patch0103: 0103-qemu-event-Don-t-fiddle-with-disk-backing-trees-with.patch
-Patch0104: 0104-qemu-Disallow-concurrent-block-jobs-on-a-single-disk.patch
-Patch0105: 0105-qemu-block-commit-Mark-disk-in-block-jobs-only-on-su.patch
+Patch0001: 0001-polkit-Allow-password-less-access-for-libvirt-group.patch
 
 %if %{with_libvirtd}
 Requires: libvirt-daemon = %{version}-%{release}
@@ -1261,6 +1246,7 @@ if [ $COUNT -gt 0 ]; then
 fi
 echo "Applied $COUNT patches"
 rm -f $PATCHLIST
+rm -rf .git
 
 %build
 %if ! %{with_xen}
@@ -2311,6 +2297,17 @@ exit 0
 %doc examples/systemtap
 
 %changelog
+* Wed Dec 23 2015 Cole Robinson <crobinso@redhat.com> - 1.2.13.2-1
+- Rebased to version 1.2.13.2
+- disk backend is not removed properly when disk frontent hotplug fails (bz
+  #1265968)
+- Fix TPM cancel path on newer kernels (bz #1244895)
+- Remove timeout for libvirt-guests.service (bz #1195544)
+- CVE-2015-5313 libvirt: filesystem storage volume names path traversal flaw
+  (bz #1291433)
+- Fix VM names with non-ascii (bz #1062943)
+- Fix backwards migration with graphics listen address (bz #1276883)
+
 * Mon Sep 21 2015 Cole Robinson <crobinso@redhat.com> - 1.2.13.1-3
 - Add sanity checks for drive mirroring (bz #1263438)
 
