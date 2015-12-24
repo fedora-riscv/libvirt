@@ -377,8 +377,8 @@
 
 Summary: Library providing a simple virtualization API
 Name: libvirt
-Version: 1.2.18.1
-Release: 2%{?dist}%{?extra_release}
+Version: 1.2.18.2
+Release: 1%{?dist}%{?extra_release}
 License: LGPLv2+
 Group: Development/Libraries
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
@@ -388,11 +388,6 @@ URL: http://libvirt.org/
     %define mainturl stable_updates/
 %endif
 Source: http://libvirt.org/sources/%{?mainturl}libvirt-%{version}.tar.gz
-
-# Fix qemu.conf dynamic_ownership=0 (bz #1266628)
-Patch0001: 0001-qemu-Fix-dynamic_ownership-qemu.conf-setting.patch
-# Fix some spec file warnings
-Patch0002: 0002-spec-Fix-some-warnings-with-latest-rpmbuild.patch
 
 %if %{with_libvirtd}
 Requires: libvirt-daemon = %{version}-%{release}
@@ -1261,6 +1256,7 @@ if [ $COUNT -gt 0 ]; then
 fi
 echo "Applied $COUNT patches"
 rm -f $PATCHLIST
+rm -rf .git
 
 %build
 %if ! %{with_xen}
@@ -2335,6 +2331,17 @@ exit 0
 %doc examples/systemtap
 
 %changelog
+* Wed Dec 23 2015 Cole Robinson <crobinso@redhat.com> - 1.2.18.2-1
+- Rebased to version 1.2.18.2
+- disk backend is not removed properly when disk frontent hotplug fails (bz
+  #1265968)
+- Fix TPM cancel path on newer kernels (bz #1244895)
+- Remove timeout for libvirt-guests.service (bz #1195544)
+- CVE-2015-5313 libvirt: filesystem storage volume names path traversal flaw
+  (bz #1291433)
+- Fix VM names with non-ascii (bz #1062943)
+- Fix backwards migration with graphics listen address (bz #1276883)
+
 * Tue Oct 06 2015 Cole Robinson <crobinso@redhat.com> - 1.2.18.1-2
 - Fix qemu.conf dynamic_ownership=0 (bz #1266628)
 - Fix some spec file warnings
