@@ -371,7 +371,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 1.2.13.2
-Release: 1%{?dist}%{?extra_release}
+Release: 2%{?dist}%{?extra_release}
 License: LGPLv2+
 Group: Development/Libraries
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
@@ -382,8 +382,23 @@ URL: http://libvirt.org/
 %endif
 Source: http://libvirt.org/sources/%{?mainturl}libvirt-%{version}.tar.gz
 
+# Fix XML validation with qemu commandline passthrough (bz #1292131)
+Patch0001: 0001-schema-interleave-domain-name-and-uuid-with-other-el.patch
+# Fix crash in libvirt_leasehelper (bz #1202350)
+Patch0002: 0002-leaseshelper-fix-crash-when-no-mac-is-specified.patch
+# Generate consistent systemtap tapsets regardless of host arch (bz
+# #1173641)
+Patch0003: 0003-build-predictably-generate-systemtap-tapsets-bz-1173.patch
+# Fix qemu:///session error 'Transport endpoint is not connected' (bz
+# #1271183)
+Patch0004: 0004-rpc-ensure-daemon-is-spawn-even-if-dead-socket-exist.patch
+Patch0005: 0005-rpc-socket-Minor-cleanups.patch
+Patch0006: 0006-rpc-socket-Explicitly-error-if-we-exceed-retry-count.patch
+Patch0007: 0007-rpc-socket-Don-t-repeatedly-attempt-to-launch-daemon.patch
+# Fix parallel VM start/top svirt errors on kernel/initrd (bz #1269975)
+Patch0008: 0008-security-Do-not-restore-kernel-and-initrd-labels.patch
 # polkit: Allow password-less access for 'libvirt' group (bz #957300)
-Patch0001: 0001-polkit-Allow-password-less-access-for-libvirt-group.patch
+Patch0009: 0009-polkit-Allow-password-less-access-for-libvirt-group.patch
 
 %if %{with_libvirtd}
 Requires: libvirt-daemon = %{version}-%{release}
@@ -2297,6 +2312,15 @@ exit 0
 %doc examples/systemtap
 
 %changelog
+* Wed Jan 20 2016 Cole Robinson <crobinso@redhat.com> - 1.2.13.2-2
+- Fix XML validation with qemu commandline passthrough (bz #1292131)
+- Fix crash in libvirt_leasehelper (bz #1202350)
+- Generate consistent systemtap tapsets regardless of host arch (bz
+  #1173641)
+- Fix qemu:///session error 'Transport endpoint is not connected' (bz
+  #1271183)
+- Fix parallel VM start/top svirt errors on kernel/initrd (bz #1269975)
+
 * Wed Dec 23 2015 Cole Robinson <crobinso@redhat.com> - 1.2.13.2-1
 - Rebased to version 1.2.13.2
 - disk backend is not removed properly when disk frontent hotplug fails (bz

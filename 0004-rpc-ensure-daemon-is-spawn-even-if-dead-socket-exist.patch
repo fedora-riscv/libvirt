@@ -1,0 +1,30 @@
+From: "Daniel P. Berrange" <berrange@redhat.com>
+Date: Fri, 3 Jul 2015 16:51:56 +0100
+Subject: [PATCH] rpc: ensure daemon is spawn even if dead socket exists
+
+The auto-spawn code would originally attempt to spawn the
+daemon for both ENOENT and ECONNREFUSED errors from connect().
+The various refactorings eventually lost this so we only
+spawn the daemon on ENOENT. The result is if the daemon exits
+uncleanly, so that the socket is left in the filesystem, we
+will never be able to auto-spawn the daemon again.
+
+(cherry picked from commit 406ee8c226d2197ba1aaecb9cf3ad2b6df31ae44)
+---
+ src/rpc/virnetsocket.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/src/rpc/virnetsocket.c b/src/rpc/virnetsocket.c
+index 51f94d4..6153e0e 100644
+--- a/src/rpc/virnetsocket.c
++++ b/src/rpc/virnetsocket.c
+@@ -610,7 +610,8 @@ int virNetSocketNewConnectUNIX(const char *path,
+ 
+     while (retries &&
+            connect(fd, &remoteAddr.data.sa, remoteAddr.len) < 0) {
+-        if (!(spawnDaemon && errno == ENOENT)) {
++        if (!(spawnDaemon && (errno == ENOENT ||
++                              errno == ECONNREFUSED))) {
+             virReportSystemError(errno, _("Failed to connect socket to '%s'"),
+                                  path);
+             goto cleanup;
