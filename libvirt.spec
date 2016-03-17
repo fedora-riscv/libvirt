@@ -371,7 +371,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 1.2.13.2
-Release: 2%{?dist}%{?extra_release}
+Release: 3%{?dist}%{?extra_release}
 License: LGPLv2+
 Group: Development/Libraries
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
@@ -397,8 +397,12 @@ Patch0006: 0006-rpc-socket-Explicitly-error-if-we-exceed-retry-count.patch
 Patch0007: 0007-rpc-socket-Don-t-repeatedly-attempt-to-launch-daemon.patch
 # Fix parallel VM start/top svirt errors on kernel/initrd (bz #1269975)
 Patch0008: 0008-security-Do-not-restore-kernel-and-initrd-labels.patch
+# Fix qemu:///session connect race failures (bz #1271183)
+Patch0009: 0009-rpc-wait-longer-for-session-daemon-to-start-up.patch
+# driver: log missing modules as INFO, not WARN (bz #1274849)
+Patch0010: 0010-driver-log-missing-modules-as-INFO-not-WARN.patch
 # polkit: Allow password-less access for 'libvirt' group (bz #957300)
-Patch0009: 0009-polkit-Allow-password-less-access-for-libvirt-group.patch
+Patch0011: 0011-polkit-Allow-password-less-access-for-libvirt-group.patch
 
 %if %{with_libvirtd}
 Requires: libvirt-daemon = %{version}-%{release}
@@ -2312,6 +2316,10 @@ exit 0
 %doc examples/systemtap
 
 %changelog
+* Thu Mar 17 2016 Cole Robinson <crobinso@redhat.com> - 1.2.13.2-3
+- Fix qemu:///session connect race failures (bz #1271183)
+- driver: log missing modules as INFO, not WARN (bz #1274849)
+
 * Wed Jan 20 2016 Cole Robinson <crobinso@redhat.com> - 1.2.13.2-2
 - Fix XML validation with qemu commandline passthrough (bz #1292131)
 - Fix crash in libvirt_leasehelper (bz #1202350)
