@@ -378,7 +378,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 1.2.18.2
-Release: 2%{?dist}%{?extra_release}
+Release: 3%{?dist}%{?extra_release}
 License: LGPLv2+
 Group: Development/Libraries
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
@@ -403,6 +403,19 @@ Patch0005: 0005-rpc-socket-Explicitly-error-if-we-exceed-retry-count.patch
 Patch0006: 0006-rpc-socket-Don-t-repeatedly-attempt-to-launch-daemon.patch
 # Fix parallel VM start/top svirt errors on kernel/initrd (bz #1269975)
 Patch0007: 0007-security-Do-not-restore-kernel-and-initrd-labels.patch
+# Fix lxc /proc/meminfo virtualization (bz #1300781)
+Patch0008: 0008-virfile-Fix-error-path-for-forked-virFileRemove.patch
+Patch0009: 0009-lxc-fuse-Unindent-meminfo-logic.patch
+Patch0010: 0010-lxc-fuse-Fix-proc-meminfo-size-calculation.patch
+Patch0011: 0011-lxc-fuse-Fill-in-MemAvailable-for-proc-meminfo.patch
+Patch0012: 0012-lxc-fuse-Stub-out-Slab-bits-in-proc-meminfo.patch
+# Fix 'permission denied' errors trying to unlink disk images (bz #1289327)
+Patch0013: 0013-util-virfile-Clarify-setuid-usage-for-virFileRemove.patch
+Patch0014: 0014-util-virfile-Only-setuid-for-virFileRemove-if-on-NFS.patch
+# Fix qemu:///session connect race failures (bz #1271183)
+Patch0015: 0015-rpc-wait-longer-for-session-daemon-to-start-up.patch
+# driver: log missing modules as INFO, not WARN (bz #1274849)
+Patch0016: 0016-driver-log-missing-modules-as-INFO-not-WARN.patch
 
 %if %{with_libvirtd}
 Requires: libvirt-daemon = %{version}-%{release}
@@ -2346,6 +2359,12 @@ exit 0
 %doc examples/systemtap
 
 %changelog
+* Thu Mar 17 2016 Cole Robinson <crobinso@redhat.com> - 1.2.18.2-3
+- Fix lxc /proc/meminfo virtualization (bz #1300781)
+- Fix 'permission denied' errors trying to unlink disk images (bz #1289327)
+- Fix qemu:///session connect race failures (bz #1271183)
+- driver: log missing modules as INFO, not WARN (bz #1274849)
+
 * Wed Jan 20 2016 Cole Robinson <crobinso@redhat.com> - 1.2.18.2-2
 - Fix XML validation with qemu commandline passthrough (bz #1292131)
 - Fix crash in libvirt_leasehelper (bz #1202350)
