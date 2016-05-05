@@ -377,8 +377,8 @@
 
 Summary: Library providing a simple virtualization API
 Name: libvirt
-Version: 1.2.18.2
-Release: 3%{?dist}%{?extra_release}
+Version: 1.2.18.3
+Release: 1%{?dist}%{?extra_release}
 License: LGPLv2+
 Group: Development/Libraries
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
@@ -388,34 +388,6 @@ URL: http://libvirt.org/
     %define mainturl stable_updates/
 %endif
 Source: http://libvirt.org/sources/%{?mainturl}libvirt-%{version}.tar.gz
-
-# Fix XML validation with qemu commandline passthrough (bz #1292131)
-Patch0001: 0001-schema-interleave-domain-name-and-uuid-with-other-el.patch
-# Fix crash in libvirt_leasehelper (bz #1202350)
-Patch0002: 0002-leaseshelper-fix-crash-when-no-mac-is-specified.patch
-# Generate consistent systemtap tapsets regardless of host arch (bz
-# #1173641)
-Patch0003: 0003-build-predictably-generate-systemtap-tapsets-bz-1173.patch
-# Fix qemu:///session error 'Transport endpoint is not connected' (bz
-# #1271183)
-Patch0004: 0004-rpc-socket-Minor-cleanups.patch
-Patch0005: 0005-rpc-socket-Explicitly-error-if-we-exceed-retry-count.patch
-Patch0006: 0006-rpc-socket-Don-t-repeatedly-attempt-to-launch-daemon.patch
-# Fix parallel VM start/top svirt errors on kernel/initrd (bz #1269975)
-Patch0007: 0007-security-Do-not-restore-kernel-and-initrd-labels.patch
-# Fix lxc /proc/meminfo virtualization (bz #1300781)
-Patch0008: 0008-virfile-Fix-error-path-for-forked-virFileRemove.patch
-Patch0009: 0009-lxc-fuse-Unindent-meminfo-logic.patch
-Patch0010: 0010-lxc-fuse-Fix-proc-meminfo-size-calculation.patch
-Patch0011: 0011-lxc-fuse-Fill-in-MemAvailable-for-proc-meminfo.patch
-Patch0012: 0012-lxc-fuse-Stub-out-Slab-bits-in-proc-meminfo.patch
-# Fix 'permission denied' errors trying to unlink disk images (bz #1289327)
-Patch0013: 0013-util-virfile-Clarify-setuid-usage-for-virFileRemove.patch
-Patch0014: 0014-util-virfile-Only-setuid-for-virFileRemove-if-on-NFS.patch
-# Fix qemu:///session connect race failures (bz #1271183)
-Patch0015: 0015-rpc-wait-longer-for-session-daemon-to-start-up.patch
-# driver: log missing modules as INFO, not WARN (bz #1274849)
-Patch0016: 0016-driver-log-missing-modules-as-INFO-not-WARN.patch
 
 %if %{with_libvirtd}
 Requires: libvirt-daemon = %{version}-%{release}
@@ -1221,7 +1193,6 @@ namespaces.
 Summary: Libraries, includes, etc. to compile with the libvirt library
 Group: Development/Libraries
 Requires: %{name}-client = %{version}-%{release}
-Requires: %{name}-docs = %{version}-%{release}
 Requires: pkgconfig
 
 %description devel
@@ -1828,6 +1799,14 @@ if test $1 -eq 1 && test ! -f %{_sysconfdir}/libvirt/qemu/networks/default.xml ;
          < %{_datadir}/libvirt/networks/default.xml \
          > %{_sysconfdir}/libvirt/qemu/networks/default.xml
     ln -s ../default.xml %{_sysconfdir}/libvirt/qemu/networks/autostart/default.xml
+
+    # Make sure libvirt picks up the new network defininiton
+        %if %{with_systemd}
+    /bin/systemctl try-restart libvirtd.service >/dev/null 2>&1 ||:
+        %else
+    /sbin/service libvirtd condrestart > /dev/null 2>&1 || :
+        %endif
+
 fi
     %endif
 
@@ -1925,7 +1904,8 @@ exit 0
 
 %files docs
 %defattr(-, root, root)
-%doc AUTHORS ChangeLog.gz NEWS README TODO libvirt-docs/*
+%doc AUTHORS ChangeLog.gz NEWS README TODO
+%doc libvirt-docs/*
 
 # API docs
 %dir %{_datadir}/gtk-doc/html/libvirt/
@@ -1933,6 +1913,15 @@ exit 0
 %doc %{_datadir}/gtk-doc/html/libvirt/*.html
 %doc %{_datadir}/gtk-doc/html/libvirt/*.png
 %doc %{_datadir}/gtk-doc/html/libvirt/*.css
+%doc examples/hellolibvirt
+%doc examples/object-events
+%doc examples/dominfo
+%doc examples/domsuspend
+%doc examples/dommigrate
+%doc examples/openauth
+%doc examples/xml
+%doc examples/systemtap
+
 
 %if %{with_libvirtd}
 %files daemon
@@ -2345,20 +2334,14 @@ exit 0
 %{_datadir}/libvirt/api/libvirt-api.xml
 %{_datadir}/libvirt/api/libvirt-qemu-api.xml
 %{_datadir}/libvirt/api/libvirt-lxc-api.xml
-
-
-%doc docs/*.html docs/html docs/*.gif
+# Needed building python bindings
 %doc docs/libvirt-api.xml
-%doc examples/hellolibvirt
-%doc examples/object-events
-%doc examples/dominfo
-%doc examples/domsuspend
-%doc examples/dommigrate
-%doc examples/openauth
-%doc examples/xml
-%doc examples/systemtap
 
 %changelog
+* Wed May 04 2016 Cole Robinson <crobinso@redhat.com> - 1.2.18.3-1
+- Rebased to version 1.2.18.3
+- Start network after config-network RPM install (bz #867546)
+
 * Thu Mar 17 2016 Cole Robinson <crobinso@redhat.com> - 1.2.18.2-3
 - Fix lxc /proc/meminfo virtualization (bz #1300781)
 - Fix 'permission denied' errors trying to unlink disk images (bz #1289327)
