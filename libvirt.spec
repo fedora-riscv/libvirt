@@ -379,7 +379,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 1.3.3.1
-Release: 1%{?dist}%{?extra_release}
+Release: 2%{?dist}%{?extra_release}
 License: LGPLv2+
 Group: Development/Libraries
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
@@ -389,6 +389,19 @@ URL: http://libvirt.org/
     %define mainturl stable_updates/
 %endif
 Source: http://libvirt.org/sources/%{?mainturl}libvirt-%{version}.tar.gz
+
+# Fix libxl video config via virt-install (bz #1334557)
+Patch0001: 0001-conf-reduce-indentation-in-virDomainDefAddImplicitVi.patch
+Patch0002: 0002-conf-use-VIR_APPEND_ELEMENT-in-virDomainDefAddImplic.patch
+Patch0003: 0003-Move-virDomainDefPostParseInternal-after-virDomainDe.patch
+Patch0004: 0004-Call-per-device-post-parse-callback-even-on-implicit.patch
+Patch0005: 0005-Fill-out-default-vram-in-DeviceDefPostParse.patch
+Patch0006: 0006-Fix-tests-to-include-video-ram-size.patch
+Patch0007: 0007-libxl-don-t-attempt-to-probe-a-non-existent-emulator.patch
+Patch0008: 0008-xlconfigtests-use-qemu-xen-in-all-test-data-files.patch
+
+# Advertise fedora edk2 firmware builds to apps (bz #1335395)
+Patch0101: 0101-spec-Advertise-nvram-paths-of-official-fedora-edk2-b.patch
 
 %if %{with_libvirtd}
 Requires: libvirt-daemon = %{version}-%{release}
@@ -2403,6 +2416,10 @@ exit 0
 
 
 %changelog
+* Fri May 20 2016 Cole Robinson <crobinso@redhat.com> - 1.3.3.1-2
+- Fix libxl video config via virt-install (bz #1334557)
+- Advertise fedora edk2 firmware builds to apps (bz #1335395)
+
 * Wed May 04 2016 Cole Robinson <crobinso@redhat.com> - 1.3.3.1-1
 - Rebased to version 1.3.3.1
 - Fix default video device primary= setting (bz #1332701)
