@@ -345,12 +345,6 @@
 %endif
 
 
-# Advertise OVMF and AAVMF from nightly firmware repo
-%if 0%{?fedora}
-    %define with_loader_nvram --with-loader-nvram="/usr/share/edk2.git/ovmf-x64/OVMF_CODE-pure-efi.fd:/usr/share/edk2.git/ovmf-x64/OVMF_VARS-pure-efi.fd:/usr/share/edk2.git/aarch64/QEMU_EFI-pflash.raw:/usr/share/edk2.git/aarch64/vars-template-pflash.raw"
-%endif
-
-
 # The RHEL-5 Xen package has some feature backports. This
 # flag is set to enable use of those special bits on RHEL-5
 %if 0%{?rhel} == 5
@@ -379,7 +373,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 1.3.3.1
-Release: 2%{?dist}%{?extra_release}
+Release: 3%{?dist}%{?extra_release}
 License: LGPLv2+
 Group: Development/Libraries
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
@@ -1498,6 +1492,18 @@ rm -rf .git
     %endif
 %endif
 
+%if 0%{?fedora}
+    # Nightly firmware repo x86/OVMF
+    LOADERS="/usr/share/edk2.git/ovmf-x64/OVMF_CODE-pure-efi.fd:/usr/share/edk2.git/ovmf-x64/OVMF_VARS-pure-efi.fd"
+    # Nightly firmware repo aarch64/AAVMF
+    LOADERS="$LOADERS:/usr/share/edk2.git/aarch64/QEMU_EFI-pflash.raw:/usr/share/edk2.git/aarch64/vars-template-pflash.raw"
+    # Fedora official x86/OVMF
+    LOADERS="$LOADERS:/usr/share/edk2/ovmf/OVMF_CODE.fd:/usr/share/edk2/ovmf/OVMF_VARS.fd"
+    # Fedora official aarch64/AAVMF
+    LOADERS="$LOADERS:/usr/share/edk2/aarch64/QEMU_EFI-pflash.raw:/usr/share/edk2/aarch64/vars-template-pflash.raw"
+    %define with_loader_nvram --with-loader-nvram="$LOADERS"
+%endif
+
 # place macros above and build commands below this comment
 
 %if 0%{?enable_autotools}
@@ -2416,6 +2422,9 @@ exit 0
 
 
 %changelog
+* Wed Jun 08 2016 Cole Robinson <crobinso@redhat.com> - 1.3.3.1-3
+- Fix advertising fedora edk2 firmware builds
+
 * Fri May 20 2016 Cole Robinson <crobinso@redhat.com> - 1.3.3.1-2
 - Fix libxl video config via virt-install (bz #1334557)
 - Advertise fedora edk2 firmware builds to apps (bz #1335395)
