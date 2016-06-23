@@ -344,12 +344,6 @@
 %endif
 
 
-# Advertise OVMF and AAVMF from nightly firmware repo
-%if 0%{?fedora}
-    %define with_loader_nvram --with-loader-nvram="/usr/share/edk2.git/ovmf-x64/OVMF_CODE-pure-efi.fd:/usr/share/edk2.git/ovmf-x64/OVMF_VARS-pure-efi.fd:/usr/share/edk2.git/aarch64/QEMU_EFI-pflash.raw:/usr/share/edk2.git/aarch64/vars-template-pflash.raw"
-%endif
-
-
 # The RHEL-5 Xen package has some feature backports. This
 # flag is set to enable use of those special bits on RHEL-5
 %if 0%{?rhel} == 5
@@ -378,7 +372,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 1.2.18.3
-Release: 1%{?dist}%{?extra_release}
+Release: 2%{?dist}%{?extra_release}
 License: LGPLv2+
 Group: Development/Libraries
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
@@ -388,6 +382,10 @@ URL: http://libvirt.org/
     %define mainturl stable_updates/
 %endif
 Source: http://libvirt.org/sources/%{?mainturl}libvirt-%{version}.tar.gz
+
+# Advertise fedora edk2 firmware builds to apps (bz #1335395)
+Patch0001: 0001-spec-Advertise-nvram-paths-of-official-fedora-edk2-b.patch
+Patch0002: 0002-spec-Fix-error-in-last-backport.patch
 
 %if %{with_libvirtd}
 Requires: libvirt-daemon = %{version}-%{release}
@@ -1470,6 +1468,18 @@ rm -rf .git
     %endif
 %endif
 
+%if 0%{?fedora}
+    # Nightly firmware repo x86/OVMF
+    LOADERS="/usr/share/edk2.git/ovmf-x64/OVMF_CODE-pure-efi.fd:/usr/share/edk2.git/ovmf-x64/OVMF_VARS-pure-efi.fd"
+    # Nightly firmware repo aarch64/AAVMF
+    LOADERS="$LOADERS:/usr/share/edk2.git/aarch64/QEMU_EFI-pflash.raw:/usr/share/edk2.git/aarch64/vars-template-pflash.raw"
+    # Fedora official x86/OVMF
+    LOADERS="$LOADERS:/usr/share/edk2/ovmf/OVMF_CODE.fd:/usr/share/edk2/ovmf/OVMF_VARS.fd"
+    # Fedora official aarch64/AAVMF
+    LOADERS="$LOADERS:/usr/share/edk2/aarch64/QEMU_EFI-pflash.raw:/usr/share/edk2/aarch64/vars-template-pflash.raw"
+    %define with_loader_nvram --with-loader-nvram="$LOADERS"
+%endif
+
 # place macros above and build commands below this comment
 
 %if 0%{?enable_autotools}
@@ -2337,7 +2347,11 @@ exit 0
 # Needed building python bindings
 %doc docs/libvirt-api.xml
 
+
 %changelog
+* Thu Jun 23 2016 Cole Robinson <crobinso@redhat.com> - 1.2.18.3-2
+- Advertise fedora edk2 firmware builds to apps (bz #1335395)
+
 * Wed May 04 2016 Cole Robinson <crobinso@redhat.com> - 1.2.18.3-1
 - Rebased to version 1.2.18.3
 - Start network after config-network RPM install (bz #867546)
