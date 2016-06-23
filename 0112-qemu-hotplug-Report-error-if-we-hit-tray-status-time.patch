@@ -1,0 +1,31 @@
+From: Cole Robinson <crobinso@redhat.com>
+Date: Mon, 2 May 2016 19:07:34 -0400
+Subject: [PATCH] qemu: hotplug: Report error if we hit tray status timeout
+
+If we exceed the timeout waiting for the tray status to change,
+we don't report an error. Fix it
+
+(cherry picked from commit 1fad65d49aae364576bd91352a001249510f8d4e)
+---
+ src/qemu/qemu_hotplug.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/src/qemu/qemu_hotplug.c b/src/qemu/qemu_hotplug.c
+index 40d5683..12653e3 100644
+--- a/src/qemu/qemu_hotplug.c
++++ b/src/qemu/qemu_hotplug.c
+@@ -225,7 +225,13 @@ qemuDomainChangeEjectableMedia(virQEMUDriverPtr driver,
+             goto error;
+ 
+         while (disk->tray_status != VIR_DOMAIN_DISK_TRAY_OPEN) {
+-            if (virDomainObjWaitUntil(vm, now + CHANGE_MEDIA_TIMEOUT) != 0)
++            int wait_rc = virDomainObjWaitUntil(vm, now + CHANGE_MEDIA_TIMEOUT);
++            if (wait_rc > 0) {
++                virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
++                               _("timed out waiting for "
++                                 "disk tray status update"));
++            }
++            if (wait_rc != 0)
+                 goto error;
+         }
+     } while (rc < 0);

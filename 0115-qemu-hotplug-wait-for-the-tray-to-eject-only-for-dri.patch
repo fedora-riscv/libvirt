@@ -1,0 +1,45 @@
+From: Peter Krempa <pkrempa@redhat.com>
+Date: Thu, 19 May 2016 15:30:12 +0200
+Subject: [PATCH] qemu: hotplug: wait for the tray to eject only for drives
+ with a tray
+
+Use the detected tray presence flag to trigger the tray waiting code
+only if the given storage device in qemu reports to have a tray.
+
+This is necessary as the floppy device lost it's tray as of qemu commit:
+
+commit abb3e55b5b718d6392441f56ba0729a62105ac56
+Author: Max Reitz <mreitz@redhat.com>
+Date:   Fri Jan 29 20:49:12 2016 +0100
+
+    Revert "hw/block/fdc: Implement tray status"
+
+(cherry picked from commit 72a7ff6b507bcf389cc493ac0ba07d32de266d6e)
+---
+ src/qemu/qemu_hotplug.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/src/qemu/qemu_hotplug.c b/src/qemu/qemu_hotplug.c
+index 9f42e94..4db180b 100644
+--- a/src/qemu/qemu_hotplug.c
++++ b/src/qemu/qemu_hotplug.c
+@@ -209,6 +209,7 @@ qemuDomainChangeEjectableMedia(virQEMUDriverPtr driver,
+     int ret = -1, rc;
+     char *driveAlias = NULL;
+     qemuDomainObjPrivatePtr priv = vm->privateData;
++    qemuDomainDiskPrivatePtr diskPriv = QEMU_DOMAIN_DISK_PRIVATE(disk);
+     const char *format = NULL;
+     char *sourcestr = NULL;
+ 
+@@ -237,8 +238,9 @@ qemuDomainChangeEjectableMedia(virQEMUDriverPtr driver,
+     if (qemuDomainObjExitMonitor(driver, vm) < 0)
+         goto cleanup;
+ 
+-    /* If the tray change event is supported wait for it to open. */
+-    if (virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_DEVICE_TRAY_MOVED)) {
++    /* If the tray is present and tray change event is supported wait for it to open. */
++    if (diskPriv->tray &&
++        virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_DEVICE_TRAY_MOVED)) {
+         if (qemuHotplugWaitForTrayEject(driver, vm, disk, driveAlias, force) < 0)
+             goto error;
+     } else  {

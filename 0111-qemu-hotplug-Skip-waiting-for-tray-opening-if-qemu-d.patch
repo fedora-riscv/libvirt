@@ -1,0 +1,179 @@
+From: Peter Krempa <pkrempa@redhat.com>
+Date: Fri, 29 Apr 2016 13:49:13 +0200
+Subject: [PATCH] qemu: hotplug: Skip waiting for tray opening if qemu doesn't
+ notify us
+
+If qemu doesn't support DEVICE_TRAY_MOVED event the code that attempts
+to change media would attempt to re-eject the tray even if it wouldn't
+be notified when the tray opened. Add a capability bit and skip retrying
+for old qemus.
+
+(cherry picked from commit 833ae6b4356934e7b779c4be01bd2bf051930dde)
+---
+ src/qemu/qemu_capabilities.c                  | 2 ++
+ src/qemu/qemu_capabilities.h                  | 1 +
+ src/qemu/qemu_hotplug.c                       | 9 +++++++++
+ tests/qemucapabilitiesdata/caps_1.2.2-1.caps  | 1 +
+ tests/qemucapabilitiesdata/caps_1.3.1-1.caps  | 1 +
+ tests/qemucapabilitiesdata/caps_1.4.2-1.caps  | 1 +
+ tests/qemucapabilitiesdata/caps_1.5.3-1.caps  | 1 +
+ tests/qemucapabilitiesdata/caps_1.6.0-1.caps  | 1 +
+ tests/qemucapabilitiesdata/caps_1.6.50-1.caps | 1 +
+ tests/qemucapabilitiesdata/caps_2.1.1-1.caps  | 1 +
+ tests/qemucapabilitiesdata/caps_2.4.0-1.caps  | 1 +
+ tests/qemucapabilitiesdata/caps_2.5.0-1.caps  | 1 +
+ tests/qemucapabilitiesdata/caps_2.6.0-1.caps  | 1 +
+ 13 files changed, 22 insertions(+)
+
+diff --git a/src/qemu/qemu_capabilities.c b/src/qemu/qemu_capabilities.c
+index 57e2056..94a357f 100644
+--- a/src/qemu/qemu_capabilities.c
++++ b/src/qemu/qemu_capabilities.c
+@@ -321,6 +321,7 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
+               "qxl-vga.vram64_size_mb", /* 215 */
+               "chardev-logfile",
+               "debug-threads",
++              "device-tray-moved-event",
+     );
+ 
+ 
+@@ -1493,6 +1494,7 @@ struct virQEMUCapsStringFlags virQEMUCapsEvents[] = {
+     { "DEVICE_DELETED", QEMU_CAPS_DEVICE_DEL_EVENT },
+     { "MIGRATION", QEMU_CAPS_MIGRATION_EVENT },
+     { "VSERPORT_CHANGE", QEMU_CAPS_VSERPORT_CHANGE },
++    { "DEVICE_TRAY_MOVED", QEMU_CAPS_DEVICE_TRAY_MOVED },
+ };
+ 
+ struct virQEMUCapsStringFlags virQEMUCapsObjectTypes[] = {
+diff --git a/src/qemu/qemu_capabilities.h b/src/qemu/qemu_capabilities.h
+index caf3d1b..c942be5 100644
+--- a/src/qemu/qemu_capabilities.h
++++ b/src/qemu/qemu_capabilities.h
+@@ -351,6 +351,7 @@ typedef enum {
+     QEMU_CAPS_QXL_VGA_VRAM64, /* -device qxl-vga.vram64_size_mb */
+     QEMU_CAPS_CHARDEV_LOGFILE, /* -chardev logfile=xxxx */
+     QEMU_CAPS_NAME_DEBUG_THREADS, /* Is -name debug-threads= available */
++    QEMU_CAPS_DEVICE_TRAY_MOVED, /* DEVICE_TRAY_MOVED event */
+ 
+     QEMU_CAPS_LAST /* this must always be the last item */
+ } virQEMUCapsFlags;
+diff --git a/src/qemu/qemu_hotplug.c b/src/qemu/qemu_hotplug.c
+index a58dd57..40d5683 100644
+--- a/src/qemu/qemu_hotplug.c
++++ b/src/qemu/qemu_hotplug.c
+@@ -202,6 +202,15 @@ qemuDomainChangeEjectableMedia(virQEMUDriverPtr driver,
+         if (qemuDomainObjExitMonitor(driver, vm) < 0)
+             goto cleanup;
+ 
++        /* skip all retrying if qemu doesn't notify us on tray change */
++        if (!virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_DEVICE_TRAY_MOVED)) {
++            if (rc == 0)
++                break;
++
++            if (rc < 0)
++                goto error;
++        }
++
+         if (rc < 0) {
+             /* we've already tried, error out */
+             if (ejectRetry)
+diff --git a/tests/qemucapabilitiesdata/caps_1.2.2-1.caps b/tests/qemucapabilitiesdata/caps_1.2.2-1.caps
+index 2e452ea..5fdc791 100644
+--- a/tests/qemucapabilitiesdata/caps_1.2.2-1.caps
++++ b/tests/qemucapabilitiesdata/caps_1.2.2-1.caps
+@@ -114,4 +114,5 @@
+     <flag name='virtio-net'/>
+     <flag name='qxl.vram64_size_mb'/>
+     <flag name='qxl-vga.vram64_size_mb'/>
++    <flag name='device-tray-moved-event'/>
+   </qemuCaps>
+diff --git a/tests/qemucapabilitiesdata/caps_1.3.1-1.caps b/tests/qemucapabilitiesdata/caps_1.3.1-1.caps
+index 5ad56aa..9402e68 100644
+--- a/tests/qemucapabilitiesdata/caps_1.3.1-1.caps
++++ b/tests/qemucapabilitiesdata/caps_1.3.1-1.caps
+@@ -129,4 +129,5 @@
+     <flag name='virtio-net'/>
+     <flag name='qxl.vram64_size_mb'/>
+     <flag name='qxl-vga.vram64_size_mb'/>
++    <flag name='device-tray-moved-event'/>
+   </qemuCaps>
+diff --git a/tests/qemucapabilitiesdata/caps_1.4.2-1.caps b/tests/qemucapabilitiesdata/caps_1.4.2-1.caps
+index d0341fd..1944dc3 100644
+--- a/tests/qemucapabilitiesdata/caps_1.4.2-1.caps
++++ b/tests/qemucapabilitiesdata/caps_1.4.2-1.caps
+@@ -130,4 +130,5 @@
+     <flag name='virtio-net'/>
+     <flag name='qxl.vram64_size_mb'/>
+     <flag name='qxl-vga.vram64_size_mb'/>
++    <flag name='device-tray-moved-event'/>
+   </qemuCaps>
+diff --git a/tests/qemucapabilitiesdata/caps_1.5.3-1.caps b/tests/qemucapabilitiesdata/caps_1.5.3-1.caps
+index 93ea687..d9d35ce 100644
+--- a/tests/qemucapabilitiesdata/caps_1.5.3-1.caps
++++ b/tests/qemucapabilitiesdata/caps_1.5.3-1.caps
+@@ -139,4 +139,5 @@
+     <flag name='virtio-net'/>
+     <flag name='qxl.vram64_size_mb'/>
+     <flag name='qxl-vga.vram64_size_mb'/>
++    <flag name='device-tray-moved-event'/>
+   </qemuCaps>
+diff --git a/tests/qemucapabilitiesdata/caps_1.6.0-1.caps b/tests/qemucapabilitiesdata/caps_1.6.0-1.caps
+index c25b076..1a52a6f 100644
+--- a/tests/qemucapabilitiesdata/caps_1.6.0-1.caps
++++ b/tests/qemucapabilitiesdata/caps_1.6.0-1.caps
+@@ -145,4 +145,5 @@
+     <flag name='virtio-net'/>
+     <flag name='qxl.vram64_size_mb'/>
+     <flag name='qxl-vga.vram64_size_mb'/>
++    <flag name='device-tray-moved-event'/>
+   </qemuCaps>
+diff --git a/tests/qemucapabilitiesdata/caps_1.6.50-1.caps b/tests/qemucapabilitiesdata/caps_1.6.50-1.caps
+index 30b70e9..973bdf5 100644
+--- a/tests/qemucapabilitiesdata/caps_1.6.50-1.caps
++++ b/tests/qemucapabilitiesdata/caps_1.6.50-1.caps
+@@ -145,4 +145,5 @@
+     <flag name='virtio-net'/>
+     <flag name='qxl.vram64_size_mb'/>
+     <flag name='qxl-vga.vram64_size_mb'/>
++    <flag name='device-tray-moved-event'/>
+   </qemuCaps>
+diff --git a/tests/qemucapabilitiesdata/caps_2.1.1-1.caps b/tests/qemucapabilitiesdata/caps_2.1.1-1.caps
+index 59d0323..254eb2a 100644
+--- a/tests/qemucapabilitiesdata/caps_2.1.1-1.caps
++++ b/tests/qemucapabilitiesdata/caps_2.1.1-1.caps
+@@ -163,4 +163,5 @@
+     <flag name='qxl.vram64_size_mb'/>
+     <flag name='qxl-vga.vram64_size_mb'/>
+     <flag name='debug-threads'/>
++    <flag name='device-tray-moved-event'/>
+   </qemuCaps>
+diff --git a/tests/qemucapabilitiesdata/caps_2.4.0-1.caps b/tests/qemucapabilitiesdata/caps_2.4.0-1.caps
+index efbf9af..bb76ddb 100644
+--- a/tests/qemucapabilitiesdata/caps_2.4.0-1.caps
++++ b/tests/qemucapabilitiesdata/caps_2.4.0-1.caps
+@@ -174,4 +174,5 @@
+     <flag name='qxl.vram64_size_mb'/>
+     <flag name='qxl-vga.vram64_size_mb'/>
+     <flag name='debug-threads'/>
++    <flag name='device-tray-moved-event'/>
+   </qemuCaps>
+diff --git a/tests/qemucapabilitiesdata/caps_2.5.0-1.caps b/tests/qemucapabilitiesdata/caps_2.5.0-1.caps
+index 5fd3bce..0734fbd 100644
+--- a/tests/qemucapabilitiesdata/caps_2.5.0-1.caps
++++ b/tests/qemucapabilitiesdata/caps_2.5.0-1.caps
+@@ -175,4 +175,5 @@
+     <flag name='qxl.vram64_size_mb'/>
+     <flag name='qxl-vga.vram64_size_mb'/>
+     <flag name='debug-threads'/>
++    <flag name='device-tray-moved-event'/>
+   </qemuCaps>
+diff --git a/tests/qemucapabilitiesdata/caps_2.6.0-1.caps b/tests/qemucapabilitiesdata/caps_2.6.0-1.caps
+index 549759c..7c9eb13 100644
+--- a/tests/qemucapabilitiesdata/caps_2.6.0-1.caps
++++ b/tests/qemucapabilitiesdata/caps_2.6.0-1.caps
+@@ -178,4 +178,5 @@
+     <flag name='qxl.vram64_size_mb'/>
+     <flag name='qxl-vga.vram64_size_mb'/>
+     <flag name='debug-threads'/>
++    <flag name='device-tray-moved-event'/>
+   </qemuCaps>

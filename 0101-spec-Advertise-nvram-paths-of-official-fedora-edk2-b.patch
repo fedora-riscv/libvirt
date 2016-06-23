@@ -11,6 +11,7 @@ Move the macro building into the %build target, which lets us
 build up a shell variable and make things a bit more readable
 
 https://bugzilla.redhat.com/show_bug.cgi?id=1335395
+(cherry picked from commit e9ef4dfac88806d02bd2f31eeb3f3bbafe505888)
 ---
  libvirt.spec.in | 18 ++++++++++++------
  1 file changed, 12 insertions(+), 6 deletions(-)
