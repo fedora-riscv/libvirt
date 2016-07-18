@@ -371,8 +371,8 @@
 
 Summary: Library providing a simple virtualization API
 Name: libvirt
-Version: 1.2.18.3
-Release: 2%{?dist}%{?extra_release}
+Version: 1.2.18.4
+Release: 1%{?dist}%{?extra_release}
 License: LGPLv2+
 Group: Development/Libraries
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
@@ -382,10 +382,6 @@ URL: http://libvirt.org/
     %define mainturl stable_updates/
 %endif
 Source: http://libvirt.org/sources/%{?mainturl}libvirt-%{version}.tar.gz
-
-# Advertise fedora edk2 firmware builds to apps (bz #1335395)
-Patch0001: 0001-spec-Advertise-nvram-paths-of-official-fedora-edk2-b.patch
-Patch0002: 0002-spec-Fix-error-in-last-backport.patch
 
 %if %{with_libvirtd}
 Requires: libvirt-daemon = %{version}-%{release}
@@ -2349,6 +2345,11 @@ exit 0
 
 
 %changelog
+* Mon Jul 18 2016 Cole Robinson <crobinso@redhat.com> - 1.2.18.4-1
+- Rebased to version 1.2.18.4
+- CVE-2016-5008: Setting empty VNC password allows access to unauthorized
+  users (bz #1351516)
+
 * Thu Jun 23 2016 Cole Robinson <crobinso@redhat.com> - 1.2.18.3-2
 - Advertise fedora edk2 firmware builds to apps (bz #1335395)
 
