@@ -372,8 +372,8 @@
 
 Summary: Library providing a simple virtualization API
 Name: libvirt
-Version: 1.3.3.1
-Release: 4%{?dist}%{?extra_release}
+Version: 1.3.3.2
+Release: 1%{?dist}%{?extra_release}
 License: LGPLv2+
 Group: Development/Libraries
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
@@ -383,35 +383,6 @@ URL: http://libvirt.org/
     %define mainturl stable_updates/
 %endif
 Source: http://libvirt.org/sources/%{?mainturl}libvirt-%{version}.tar.gz
-
-# Fix libxl video config via virt-install (bz #1334557)
-Patch0001: 0001-conf-reduce-indentation-in-virDomainDefAddImplicitVi.patch
-Patch0002: 0002-conf-use-VIR_APPEND_ELEMENT-in-virDomainDefAddImplic.patch
-Patch0003: 0003-Move-virDomainDefPostParseInternal-after-virDomainDe.patch
-Patch0004: 0004-Call-per-device-post-parse-callback-even-on-implicit.patch
-Patch0005: 0005-Fill-out-default-vram-in-DeviceDefPostParse.patch
-Patch0006: 0006-Fix-tests-to-include-video-ram-size.patch
-Patch0007: 0007-libxl-don-t-attempt-to-probe-a-non-existent-emulator.patch
-Patch0008: 0008-xlconfigtests-use-qemu-xen-in-all-test-data-files.patch
-
-# Advertise fedora edk2 firmware builds to apps (bz #1335395)
-Patch0101: 0101-spec-Advertise-nvram-paths-of-official-fedora-edk2-b.patch
-# Don't disable auto_login of non-libvirt-managed iscsi (bz #1331552)
-Patch0102: 0102-util-Add-exitstatus-parameter-to-virCommandRunRegex.patch
-Patch0103: 0103-iscsi-Add-exit-status-checking-for-virISCSIGetSessio.patch
-Patch0104: 0104-util-Remove-disabling-of-autologin-for-iscsi-targets.patch
-Patch0105: 0105-iscsi-Remove-initiatoriqn-from-virISCSIScanTargets.patch
-# Fix floppy media change (bz #1341998)
-Patch0106: 0106-qemu-process-Refresh-ejectable-media-tray-state-on-V.patch
-Patch0107: 0107-qemu-Move-struct-qemuDomainDiskInfo-to-qemu_domain.h.patch
-Patch0108: 0108-qemu-Extract-more-information-about-qemu-drives.patch
-Patch0109: 0109-qemu-Move-and-rename-qemuDomainCheckEjectableMedia-t.patch
-Patch0110: 0110-qemu-process-Fix-and-improve-disk-data-extraction.patch
-Patch0111: 0111-qemu-hotplug-Skip-waiting-for-tray-opening-if-qemu-d.patch
-Patch0112: 0112-qemu-hotplug-Report-error-if-we-hit-tray-status-time.patch
-Patch0113: 0113-qemu-hotplug-Extract-code-for-waiting-for-tray-eject.patch
-Patch0114: 0114-qemu-hotplug-Fix-error-reported-when-cdrom-tray-is-l.patch
-Patch0115: 0115-qemu-hotplug-wait-for-the-tray-to-eject-only-for-dri.patch
 
 %if %{with_libvirtd}
 Requires: libvirt-daemon = %{version}-%{release}
@@ -946,9 +917,9 @@ Requires: gzip
 Requires: bzip2
 Requires: lzop
 Requires: xz
-%if 0%{?fedora} >= 24
+            %if 0%{?fedora} >= 24
 Requires: systemd-container
-%endif
+            %endif
 
 %description daemon-driver-qemu
 The qemu driver plugin for the libvirtd daemon, providing
@@ -964,9 +935,9 @@ Group: Development/Libraries
 Requires: libvirt-daemon = %{version}-%{release}
 # There really is a hard cross-driver dependency here
 Requires: libvirt-daemon-driver-network = %{version}-%{release}
-%if 0%{?fedora} >= 24
+            %if 0%{?fedora} >= 24
 Requires: systemd-container
-%endif
+            %endif
 
 %description daemon-driver-lxc
 The LXC driver plugin for the libvirtd daemon, providing
@@ -2444,6 +2415,16 @@ exit 0
 
 
 %changelog
+* Mon Jul 18 2016 Cole Robinson <crobinso@redhat.com> - 1.3.3.2-1
+- Rebased to version 1.3.3.2
+- Fix xen default video device config (bz #1336629)
+- Don't reject duplicate disk serials (bz #1349895)
+- Fix LXC cgroup name mismatch (bz #1350139)
+- Fix managed save/restore with VM USB Keyboard (bz #1353222)
+- Missing dep on systemd-container (bz #1355784)
+- CVE-2016-5008: Setting empty VNC password allows access to unauthorized
+  users (bz #1351516)
+
 * Thu Jun 23 2016 Cole Robinson <crobinso@redhat.com> - 1.3.3.1-4
 - Don't disable auto_login of non-libvirt-managed iscsi (bz #1331552)
 - Fix floppy media change (bz #1341998)
