@@ -220,7 +220,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 2.2.0
-Release: 1%{?dist}%{?extra_release}
+Release: 2%{?dist}%{?extra_release}
 License: LGPLv2+
 Group: Development/Libraries
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
@@ -230,6 +230,10 @@ URL: http://libvirt.org/
     %define mainturl stable_updates/
 %endif
 Source: http://libvirt.org/sources/%{?mainturl}libvirt-%{version}.tar.xz
+
+# Fix libvirtd endless loop when starting network with multiple IPs (bz
+# #1393975)
+Patch0001: 0001-network-fix-endless-loop-when-starting-network-with-.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-config-network = %{version}-%{release}
@@ -1891,6 +1895,10 @@ exit 0
 
 
 %changelog
+* Mon Nov 14 2016 Cole Robinson <crobinso@redhat.com> - 2.2.0-2
+- Fix libvirtd endless loop when starting network with multiple IPs (bz
+  #1393975)
+
 * Mon Sep  5 2016 Daniel P. Berrange <berrange@redhat.com> - 2.2.0-1
 - Rebase to version 2.2.0
 
