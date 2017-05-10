@@ -372,7 +372,7 @@
 
 Summary: Library providing a simple virtualization API
 Name: libvirt
-Version: 1.3.3.2
+Version: 1.3.3.3
 Release: 1%{?dist}%{?extra_release}
 License: LGPLv2+
 Group: Development/Libraries
@@ -2415,6 +2415,10 @@ exit 0
 
 
 %changelog
+* Wed May 10 2017 Cole Robinson <crobinso@redhat.com> - 1.3.3.3-1
+- Rebased to version 1.3.3.3
+- schema: don't validate paths (bz #1353296)
+
 * Mon Jul 18 2016 Cole Robinson <crobinso@redhat.com> - 1.3.3.2-1
 - Rebased to version 1.3.3.2
 - Fix xen default video device config (bz #1336629)
