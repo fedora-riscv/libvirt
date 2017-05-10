@@ -219,21 +219,17 @@
 
 Summary: Library providing a simple virtualization API
 Name: libvirt
-Version: 2.2.0
-Release: 2%{?dist}%{?extra_release}
+Version: 2.2.1
+Release: 1%{?dist}%{?extra_release}
 License: LGPLv2+
 Group: Development/Libraries
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 URL: http://libvirt.org/
 
-%if %(echo %{version} | grep -o \\. | wc -l) == 3
+%if %(echo %{version} | grep -q "\.0$"; echo $?) == 1
     %define mainturl stable_updates/
 %endif
 Source: http://libvirt.org/sources/%{?mainturl}libvirt-%{version}.tar.xz
-
-# Fix libvirtd endless loop when starting network with multiple IPs (bz
-# #1393975)
-Patch0001: 0001-network-fix-endless-loop-when-starting-network-with-.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-config-network = %{version}-%{release}
@@ -416,6 +412,9 @@ BuildRequires: numad
 %if %{with_wireshark}
     %if 0%{fedora} >= 24
 BuildRequires: wireshark-devel >= 2.1.0
+# Temp hack for F25 due to broken wireshark-devel deps
+# https://bugzilla.redhat.com/show_bug.cgi?id=1401463
+BuildRequires: qt-devel glib2-devel
     %else
 BuildRequires: wireshark-devel >= 1.12.1
     %endif
@@ -1242,6 +1241,13 @@ cp $RPM_BUILD_ROOT%{_sysconfdir}/libvirt/qemu/networks/default.xml \
    $RPM_BUILD_ROOT%{_datadir}/libvirt/networks/default.xml
 rm -f $RPM_BUILD_ROOT%{_sysconfdir}/libvirt/qemu/networks/default.xml
 rm -f $RPM_BUILD_ROOT%{_sysconfdir}/libvirt/qemu/networks/autostart/default.xml
+
+# nwfilter files are installed in /usr/share/libvirt and copied to /etc in %post
+# to avoid verification errors on changed files in /etc
+install -d -m 0755 $RPM_BUILD_ROOT%{_datadir}/libvirt/nwfilter/
+cp -a $RPM_BUILD_ROOT%{_sysconfdir}/libvirt/nwfilter/*.xml \
+    $RPM_BUILD_ROOT%{_datadir}/libvirt/nwfilter/
+
 # Strip auto-generated UUID - we need it generated per-install
 sed -i -e "/<uuid>/d" $RPM_BUILD_ROOT%{_datadir}/libvirt/networks/default.xml
 %if ! %{with_qemu}
@@ -1469,6 +1475,17 @@ if test $1 -eq 1 && test ! -f %{_sysconfdir}/libvirt/qemu/networks/default.xml ;
 
 fi
 
+
+%post daemon-config-nwfilter
+cp %{_datadir}/libvirt/nwfilter/*.xml %{_sysconfdir}/libvirt/nwfilter/
+# Make sure libvirt picks up the new nwfilter defininitons
+%if %{with_systemd}
+    /bin/systemctl try-restart libvirtd.service >/dev/null 2>&1 ||:
+%else
+    /sbin/service libvirtd condrestart > /dev/null 2>&1 || :
+%endif
+
+
 %if %{with_systemd}
 %triggerun -- libvirt < 0.9.4
 %{_bindir}/systemd-sysv-convert --save libvirtd >/dev/null 2>&1 ||:
@@ -1649,7 +1666,9 @@ exit 0
 %{_datadir}/libvirt/networks/default.xml
 
 %files daemon-config-nwfilter
-%{_sysconfdir}/libvirt/nwfilter/*.xml
+%dir %{_datadir}/libvirt/nwfilter/
+%{_datadir}/libvirt/nwfilter/*.xml
+%ghost %{_sysconfdir}/libvirt/nwfilter/*.xml
 
 %files daemon-driver-interface
 %{_libdir}/%{name}/connection-driver/libvirt_driver_interface.so
@@ -1895,6 +1914,14 @@ exit 0
 
 
 %changelog
+* Wed May 10 2017 Cole Robinson <crobinso@redhat.com> - 2.2.1-1
+- Rebased to version 2.2.1
+- Fix spice port allocation collisions (bz #1390413)
+- Fix rpm validation of nwfilter config files (bz #1431581)
+- Tie virtlogd lifecycle to libvirtd.service (bz #1435855)
+- Fix double free when undefining storage pool (bz #1436400)
+- Fix crash in qemuDomainSecretDiskPrepare (bz #1438070)
+
 * Mon Nov 14 2016 Cole Robinson <crobinso@redhat.com> - 2.2.0-2
 - Fix libvirtd endless loop when starting network with multiple IPs (bz
   #1393975)
