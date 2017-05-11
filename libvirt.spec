@@ -226,14 +226,14 @@
 
 Summary: Library providing a simple virtualization API
 Name: libvirt
-Version: 3.2.0
+Version: 3.2.1
 Release: 1%{?dist}%{?extra_release}
 License: LGPLv2+
 Group: Development/Libraries
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 URL: http://libvirt.org/
 
-%if %(echo %{version} | grep -o \\. | wc -l) == 3
+%if %(echo %{version} | grep -q "\.0$"; echo $?) == 1
     %define mainturl stable_updates/
 %endif
 Source: http://libvirt.org/sources/%{?mainturl}libvirt-%{version}.tar.xz
@@ -359,7 +359,7 @@ BuildRequires: parted-devel
 # For Multipath support
 BuildRequires: device-mapper-devel
 %if %{with_storage_rbd}
-    %if 0%{?rhel} >= 7
+    %if 0%{?fedora} || 0%{?rhel} >= 7
 BuildRequires: librados2-devel
 BuildRequires: librbd1-devel
     %else
@@ -1363,6 +1363,13 @@ cp $RPM_BUILD_ROOT%{_sysconfdir}/libvirt/qemu/networks/default.xml \
    $RPM_BUILD_ROOT%{_datadir}/libvirt/networks/default.xml
 rm -f $RPM_BUILD_ROOT%{_sysconfdir}/libvirt/qemu/networks/default.xml
 rm -f $RPM_BUILD_ROOT%{_sysconfdir}/libvirt/qemu/networks/autostart/default.xml
+
+# nwfilter files are installed in /usr/share/libvirt and copied to /etc in %post
+# to avoid verification errors on changed files in /etc
+install -d -m 0755 $RPM_BUILD_ROOT%{_datadir}/libvirt/nwfilter/
+cp -a $RPM_BUILD_ROOT%{_sysconfdir}/libvirt/nwfilter/*.xml \
+    $RPM_BUILD_ROOT%{_datadir}/libvirt/nwfilter/
+
 # Strip auto-generated UUID - we need it generated per-install
 sed -i -e "/<uuid>/d" $RPM_BUILD_ROOT%{_datadir}/libvirt/networks/default.xml
 %if ! %{with_qemu}
@@ -1589,6 +1596,17 @@ if test $1 -eq 1 && test ! -f %{_sysconfdir}/libvirt/qemu/networks/default.xml ;
 
 fi
 
+
+%post daemon-config-nwfilter
+cp %{_datadir}/libvirt/nwfilter/*.xml %{_sysconfdir}/libvirt/nwfilter/
+# Make sure libvirt picks up the new nwfilter defininitons
+%if %{with_systemd}
+    /bin/systemctl try-restart libvirtd.service >/dev/null 2>&1 ||:
+%else
+    /sbin/service libvirtd condrestart > /dev/null 2>&1 || :
+%endif
+
+
 %if %{with_systemd}
 %triggerun -- libvirt < 0.9.4
 %{_bindir}/systemd-sysv-convert --save libvirtd >/dev/null 2>&1 ||:
@@ -1770,7 +1788,9 @@ exit 0
 %{_datadir}/libvirt/networks/default.xml
 
 %files daemon-config-nwfilter
-%{_sysconfdir}/libvirt/nwfilter/*.xml
+%dir %{_datadir}/libvirt/nwfilter/
+%{_datadir}/libvirt/nwfilter/*.xml
+%ghost %{_sysconfdir}/libvirt/nwfilter/*.xml
 
 %files daemon-driver-interface
 %{_libdir}/%{name}/connection-driver/libvirt_driver_interface.so
@@ -2052,6 +2072,9 @@ exit 0
 
 
 %changelog
+* Wed May 10 2017 Cole Robinson <crobinso@redhat.com> - 3.2.1-1
+- Rebased to version 3.2.1
+
 * Mon Apr  3 2017 Daniel P. Berrange <berrange@redhat.com> - 3.2.0-1
 - Rebase to version 3.2.0
 
