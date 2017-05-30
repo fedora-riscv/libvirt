@@ -227,7 +227,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 3.2.1
-Release: 1%{?dist}%{?extra_release}
+Release: 2%{?dist}%{?extra_release}
 License: LGPLv2+
 Group: Development/Libraries
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
@@ -237,6 +237,14 @@ URL: http://libvirt.org/
     %define mainturl stable_updates/
 %endif
 Source: http://libvirt.org/sources/%{?mainturl}libvirt-%{version}.tar.xz
+
+# Fix aarch64 gic default for non-kvm VMs (bz #1449837)
+Patch0001: 0001-tests-Check-default-GIC-version-for-aarch64-virt-TCG.patch
+Patch0002: 0002-qemu-Use-GICv2-for-aarch64-virt-TCG-guests.patch
+Patch0003: 0003-gic-Remove-VIR_GIC_VERSION_DEFAULT.patch
+# Don't run libvirtd in live environment, to avoid network collision (bz
+# #1146232)
+Patch0004: 0004-daemon-Don-t-run-if-in-a-Fedora-live-environment.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-config-network = %{version}-%{release}
@@ -2072,6 +2080,11 @@ exit 0
 
 
 %changelog
+* Tue May 30 2017 Cole Robinson <crobinso@redhat.com> - 3.2.1-2
+- Fix aarch64 gic default for non-kvm VMs (bz #1449837)
+- Don't run libvirtd in live environment, to avoid network collision (bz
+  #1146232)
+
 * Wed May 10 2017 Cole Robinson <crobinso@redhat.com> - 3.2.1-1
 - Rebased to version 3.2.1
 

@@ -1,0 +1,33 @@
+From: Cole Robinson <crobinso@redhat.com>
+Date: Tue, 30 May 2017 18:35:04 -0400
+Subject: [PATCH] daemon: Don't run if in a Fedora live environment
+
+Have systemd make libvirtd startup dependent on the kernel commandline
+lacking the 'rd.live.image' option, which is used by Fedora live media
+
+Roundabout way to prevent the 'default' network killing connectivity
+of the livecd running in a VM
+
+https://bugzilla.redhat.com/show_bug.cgi?id=1146232
+
+Not upstream, will likely need some kind of different permanent solution
+---
+ daemon/libvirtd.service.in | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/daemon/libvirtd.service.in b/daemon/libvirtd.service.in
+index 899abdf..cff2cd2 100644
+--- a/daemon/libvirtd.service.in
++++ b/daemon/libvirtd.service.in
+@@ -16,6 +16,11 @@ After=local-fs.target
+ After=remote-fs.target
+ Documentation=man:libvirtd(8)
+ Documentation=http://libvirt.org
++# Prevent libvirtd from starting if running in a Fedora live environment
++# Roundabout way to prevent the 'default' network killing connectivity
++# of the livecd running in a VM
++# https://bugzilla.redhat.com/show_bug.cgi?id=1146232
++ConditionKernelCommandLine=!rd.live.image
+ 
+ [Service]
+ Type=notify
