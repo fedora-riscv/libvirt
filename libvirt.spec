@@ -220,7 +220,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 2.2.1
-Release: 1%{?dist}%{?extra_release}
+Release: 2%{?dist}%{?extra_release}
 License: LGPLv2+
 Group: Development/Libraries
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
@@ -230,6 +230,9 @@ URL: http://libvirt.org/
     %define mainturl stable_updates/
 %endif
 Source: http://libvirt.org/sources/%{?mainturl}libvirt-%{version}.tar.xz
+
+# Fix padding of encrypted data (bz #1452622)
+Patch0001: 0001-Fix-padding-of-encrypted-data.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-config-network = %{version}-%{release}
@@ -1914,6 +1917,9 @@ exit 0
 
 
 %changelog
+* Tue May 30 2017 Cole Robinson <crobinso@redhat.com> - 2.2.1-2
+- Fix padding of encrypted data (bz #1452622)
+
 * Wed May 10 2017 Cole Robinson <crobinso@redhat.com> - 2.2.1-1
 - Rebased to version 2.2.1
 - Fix spice port allocation collisions (bz #1390413)
