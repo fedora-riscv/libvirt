@@ -227,7 +227,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 3.2.1
-Release: 2%{?dist}%{?extra_release}
+Release: 3%{?dist}%{?extra_release}
 License: LGPLv2+
 Group: Development/Libraries
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
@@ -2080,6 +2080,9 @@ exit 0
 
 
 %changelog
+* Wed May 31 2017 Cole Robinson <crobinso@redhat.com> - 3.2.1-3
+- Tweak condition for not starting in live environment (bz #1146232)
+
 * Tue May 30 2017 Cole Robinson <crobinso@redhat.com> - 3.2.1-2
 - Fix aarch64 gic default for non-kvm VMs (bz #1449837)
 - Don't run libvirtd in live environment, to avoid network collision (bz

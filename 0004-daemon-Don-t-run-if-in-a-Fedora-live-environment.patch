@@ -1,9 +1,12 @@
+From d76701a6abf42d2e2cd94a6ef33f83965432bb21 Mon Sep 17 00:00:00 2001
+Message-Id: <d76701a6abf42d2e2cd94a6ef33f83965432bb21.1496265324.git.crobinso@redhat.com>
 From: Cole Robinson <crobinso@redhat.com>
 Date: Tue, 30 May 2017 18:35:04 -0400
-Subject: [PATCH] daemon: Don't run if in a Fedora live environment
+Subject: [PATCH] daemon: Don't run if in a Fedora live VM
 
-Have systemd make libvirtd startup dependent on the kernel commandline
-lacking the 'rd.live.image' option, which is used by Fedora live media
+Only start libvirtd if not in a VM OR if not in a Fedora live env,
+via systemd unit conditions. It checks Fedora live env by looking
+for the rd.live.image option on the kernel command line.
 
 Roundabout way to prevent the 'default' network killing connectivity
 of the livecd running in a VM
@@ -11,23 +14,29 @@ of the livecd running in a VM
 https://bugzilla.redhat.com/show_bug.cgi?id=1146232
 
 Not upstream, will likely need some kind of different permanent solution
+
+Signed-off-by: Cole Robinson <crobinso@redhat.com>
 ---
- daemon/libvirtd.service.in | 5 +++++
- 1 file changed, 5 insertions(+)
+ daemon/libvirtd.service.in | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
 diff --git a/daemon/libvirtd.service.in b/daemon/libvirtd.service.in
-index 899abdf..cff2cd2 100644
+index 899abdf..7836e94 100644
 --- a/daemon/libvirtd.service.in
 +++ b/daemon/libvirtd.service.in
-@@ -16,6 +16,11 @@ After=local-fs.target
+@@ -16,6 +16,12 @@ After=local-fs.target
  After=remote-fs.target
  Documentation=man:libvirtd(8)
  Documentation=http://libvirt.org
-+# Prevent libvirtd from starting if running in a Fedora live environment
++# This says, start libvirtd if not in a VM OR if not in a Fedora live env
 +# Roundabout way to prevent the 'default' network killing connectivity
 +# of the livecd running in a VM
 +# https://bugzilla.redhat.com/show_bug.cgi?id=1146232
-+ConditionKernelCommandLine=!rd.live.image
++ConditionVirtualization=|0
++ConditionKernelCommandLine=|!rd.live.image
  
  [Service]
  Type=notify
+-- 
+2.9.4
+
