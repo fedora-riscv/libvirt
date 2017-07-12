@@ -15,10 +15,10 @@ Signed-off-by: Andrea Bolognani <abologna@redhat.com>
  3 files changed, 6 insertions(+), 10 deletions(-)
 
 diff --git a/src/qemu/qemu_command.c b/src/qemu/qemu_command.c
-index 64d2d71..188e273 100644
+index 2d1328cf9..5feddc523 100644
 --- a/src/qemu/qemu_command.c
 +++ b/src/qemu/qemu_command.c
-@@ -7317,9 +7317,9 @@ qemuBuildMachineCommandLine(virCommandPtr cmd,
+@@ -7321,9 +7321,9 @@ qemuBuildMachineCommandLine(virCommandPtr cmd,
                      goto cleanup;
                  }
  
@@ -32,7 +32,7 @@ index 64d2d71..188e273 100644
                                          QEMU_CAPS_MACH_VIRT_GIC_VERSION)) {
                          virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
 diff --git a/src/qemu/qemu_domain.c b/src/qemu/qemu_domain.c
-index 891f825..4a127ce 100644
+index 891f8258a..4a127cedf 100644
 --- a/src/qemu/qemu_domain.c
 +++ b/src/qemu/qemu_domain.c
 @@ -2560,12 +2560,11 @@ qemuDomainDefEnableDefaultFeatures(virDomainDefPtr def,
@@ -52,7 +52,7 @@ index 891f825..4a127ce 100644
  }
  
 diff --git a/src/util/virgic.h b/src/util/virgic.h
-index 1c9efd6..2d77fdd 100644
+index 1c9efd60f..2d77fdd45 100644
 --- a/src/util/virgic.h
 +++ b/src/util/virgic.h
 @@ -35,9 +35,6 @@ typedef enum {

@@ -16,7 +16,7 @@ Signed-off-by: Andrea Bolognani <abologna@redhat.com>
  3 files changed, 24 insertions(+), 3 deletions(-)
 
 diff --git a/src/qemu/qemu_domain.c b/src/qemu/qemu_domain.c
-index 589eb18..891f825 100644
+index 589eb1889..891f8258a 100644
 --- a/src/qemu/qemu_domain.c
 +++ b/src/qemu/qemu_domain.c
 @@ -2527,6 +2527,24 @@ qemuDomainDefEnableDefaultFeatures(virDomainDefPtr def,
@@ -58,7 +58,7 @@ index 589eb18..891f825 100644
  
  
 diff --git a/tests/qemuxml2argvdata/qemuxml2argv-aarch64-gic-none-tcg.args b/tests/qemuxml2argvdata/qemuxml2argv-aarch64-gic-none-tcg.args
-index 975a014..52b6996 100644
+index 975a01481..52b699696 100644
 --- a/tests/qemuxml2argvdata/qemuxml2argv-aarch64-gic-none-tcg.args
 +++ b/tests/qemuxml2argvdata/qemuxml2argv-aarch64-gic-none-tcg.args
 @@ -7,7 +7,7 @@ QEMU_AUDIO_DRV=none \
@@ -71,7 +71,7 @@ index 975a014..52b6996 100644
  -m 1024 \
  -smp 1,sockets=1,cores=1,threads=1 \
 diff --git a/tests/qemuxml2xmloutdata/qemuxml2xmlout-aarch64-gic-none-tcg.xml b/tests/qemuxml2xmloutdata/qemuxml2xmlout-aarch64-gic-none-tcg.xml
-index 69510e2..a0cd0b7 100644
+index 69510e281..a0cd0b768 100644
 --- a/tests/qemuxml2xmloutdata/qemuxml2xmlout-aarch64-gic-none-tcg.xml
 +++ b/tests/qemuxml2xmloutdata/qemuxml2xmlout-aarch64-gic-none-tcg.xml
 @@ -9,7 +9,7 @@

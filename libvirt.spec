@@ -227,7 +227,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 3.2.1
-Release: 3%{?dist}%{?extra_release}
+Release: 4%{?dist}%{?extra_release}
 License: LGPLv2+
 Group: Development/Libraries
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
@@ -244,7 +244,22 @@ Patch0002: 0002-qemu-Use-GICv2-for-aarch64-virt-TCG-guests.patch
 Patch0003: 0003-gic-Remove-VIR_GIC_VERSION_DEFAULT.patch
 # Don't run libvirtd in live environment, to avoid network collision (bz
 # #1146232)
-Patch0004: 0004-daemon-Don-t-run-if-in-a-Fedora-live-environment.patch
+Patch0004: 0004-daemon-Don-t-run-if-in-a-Fedora-live-VM.patch
+# Fix resuming qemu VMs suspended before libvirt 3.2.0
+Patch0005: 0005-Revert-qemu-propagate-bridge-MTU-into-qemu-host_mtu-.patch
+# Fix issues with AMD CPU models, and some others
+Patch0006: 0006-cpu-Introduce-virCPUCopyMigratable.patch
+Patch0007: 0007-qemu-Move-common-code-in-virQEMUCapsInitCPUModel-one.patch
+Patch0008: 0008-qemu-Add-migratable-parameter-to-virQEMUCapsInitCPUM.patch
+Patch0009: 0009-qemu-Introduce-virQEMUCapsSetHostModel.patch
+Patch0010: 0010-qemu-Move-qemuCaps-CPU-data-copying-into-a-separate-.patch
+Patch0011: 0011-qemu-Introduce-virQEMUCapsHostCPUDataClear.patch
+Patch0012: 0012-qemu-Move-qemuCaps-host-CPU-data-in-a-struct.patch
+Patch0013: 0013-qemu-Prepare-qemuCaps-for-multiple-host-CPU-defs.patch
+Patch0014: 0014-qemu-Pass-migratable-host-CPU-model-to-virCPUUpdate.patch
+Patch0015: 0015-cpu-Drop-feature-filtering-from-virCPUUpdate.patch
+Patch0016: 0016-cpu-Introduce-virCPUGetHostIsSupported.patch
+Patch0017: 0017-qemu-Use-more-data-for-comparing-CPUs.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-config-network = %{version}-%{release}
@@ -2077,6 +2092,10 @@ exit 0
 
 
 %changelog
+* Wed Jul 12 2017 Cole Robinson <crobinso@redhat.com> - 3.2.1-4
+- Fix resuming qemu VMs suspended before libvirt 3.2.0
+- Fix issues with AMD CPU models, and some others
+
 * Wed May 31 2017 Cole Robinson <crobinso@redhat.com> - 3.2.1-3
 - Tweak condition for not starting in live environment (bz #1146232)
 
