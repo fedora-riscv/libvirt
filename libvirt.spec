@@ -71,6 +71,13 @@
 %define with_storage_gluster 0%{!?_without_storage_gluster:1}
 %define with_numactl          0%{!?_without_numactl:1}
 
+# F25+ has zfs-fuse
+%if 0%{?fedora} >= 25
+    %define with_storage_zfs      0%{!?_without_storage_zfs:1}
+%else
+    %define with_storage_zfs      0
+%endif
+
 # A few optional bits off by default, we enable later
 %define with_fuse          0%{!?_without_fuse:0}
 %define with_cgconfig      0%{!?_without_cgconfig:0}
@@ -114,6 +121,12 @@
         %define with_storage_rbd 0
     %endif
 %endif
+
+# zfs-fuse is not available on some architectures
+%ifarch s390 s390x aarch64
+    %define with_storage_zfs 0
+%endif
+
 
 # RHEL doesn't ship OpenVZ, VBox, UML, PowerHypervisor,
 # VMware, libxenserver (xenapi), libxenlight (Xen 4.1 and newer),
@@ -227,7 +240,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 3.2.1
-Release: 4%{?dist}%{?extra_release}
+Release: 5%{?dist}%{?extra_release}
 License: LGPLv2+
 Group: Development/Libraries
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
@@ -260,6 +273,14 @@ Patch0014: 0014-qemu-Pass-migratable-host-CPU-model-to-virCPUUpdate.patch
 Patch0015: 0015-cpu-Drop-feature-filtering-from-virCPUUpdate.patch
 Patch0016: 0016-cpu-Introduce-virCPUGetHostIsSupported.patch
 Patch0017: 0017-qemu-Use-more-data-for-comparing-CPUs.patch
+
+# Enable ZFS storage driver (bz #1471912)
+Patch0101: 0101-spec-Add-support-for-building-the-zfs-storage-driver.patch
+# Don't use cgroup mount points from /proc/mounts that are hidden (bz
+# #1470593)
+Patch0102: 0102-Avoid-hidden-cgroup-mount-points.patch
+# disk driver name=... should be optional (bz #1473091)
+Patch0103: 0103-docs-schema-make-disk-driver-name-attribute-optional.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-config-network = %{version}-%{release}
@@ -395,6 +416,12 @@ BuildRequires: glusterfs-devel >= 3.4.1
 %endif
 %if %{with_storage_sheepdog}
 BuildRequires: sheepdog
+%endif
+%if %{with_storage_zfs}
+# Support any conforming implementation of zfs. On stock Fedora
+# this is zfs-fuse, but could be zfsonlinux upstream RPMs
+BuildRequires: /sbin/zfs
+BuildRequires: /sbin/zpool
 %endif
 %if %{with_numactl}
 # For QEMU/LXC numa info
@@ -728,6 +755,21 @@ sheepdog volumes using.
 %endif
 
 
+%if %{with_storage_zfs}
+%package daemon-driver-storage-zfs
+Summary: Storage driver plugin for ZFS
+Group: Development/Libraries
+Requires: libvirt-daemon-driver-storage-core = %{version}-%{release}
+# Support any conforming implementation of zfs
+Requires: /sbin/zfs
+Requires: /sbin/zpool
+
+%description daemon-driver-storage-zfs
+The storage driver backend adding implementation of the storage APIs for
+ZFS volumes.
+%endif
+
+
 %package daemon-driver-storage
 Summary: Storage driver plugin including all backends for the libvirtd daemon
 Group: Development/Libraries
@@ -745,6 +787,9 @@ Requires: libvirt-daemon-driver-storage-rbd = %{version}-%{release}
 %endif
 %if %{with_storage_sheepdog}
 Requires: libvirt-daemon-driver-storage-sheepdog = %{version}-%{release}
+%endif
+%if %{with_storage_zfs}
+Requires: libvirt-daemon-driver-storage-zfs = %{version}-%{release}
 %endif
 
 %description daemon-driver-storage
@@ -1203,6 +1248,12 @@ rm -rf .git
     %define arg_storage_gluster --without-storage-gluster
 %endif
 
+%if %{with_storage_zfs}
+    %define arg_storage_zfs --with-storage-zfs
+%else
+    %define arg_storage_zfs --without-storage-zfs
+%endif
+
 %if %{with_numactl}
     %define arg_numactl --with-numactl
 %else
@@ -1311,7 +1362,7 @@ rm -f po/stamp-po
            %{?arg_storage_rbd} \
            %{?arg_storage_sheepdog} \
            %{?arg_storage_gluster} \
-           --without-storage-zfs \
+           %{?arg_storage_zfs} \
            --without-storage-vstorage \
            %{?arg_numactl} \
            %{?arg_numad} \
@@ -1873,6 +1924,11 @@ exit 0
 %{_libdir}/%{name}/storage-backend/libvirt_storage_backend_sheepdog.so
 %endif
 
+%if %{with_storage_zfs}
+%files daemon-driver-storage-zfs
+%{_libdir}/%{name}/storage-backend/libvirt_storage_backend_zfs.so
+%endif
+
 %if %{with_qemu}
 %files daemon-driver-qemu
 %dir %attr(0700, root, root) %{_sysconfdir}/libvirt/qemu/
@@ -2092,6 +2148,12 @@ exit 0
 
 
 %changelog
+* Fri Aug 04 2017 Cole Robinson <crobinso@redhat.com> - 3.2.1-5
+- Enable ZFS storage driver (bz #1471912)
+- Don't use cgroup mount points from /proc/mounts that are hidden (bz
+  #1470593)
+- disk driver name=... should be optional (bz #1473091)
+
 * Wed Jul 12 2017 Cole Robinson <crobinso@redhat.com> - 3.2.1-4
 - Fix resuming qemu VMs suspended before libvirt 3.2.0
 - Fix issues with AMD CPU models, and some others
