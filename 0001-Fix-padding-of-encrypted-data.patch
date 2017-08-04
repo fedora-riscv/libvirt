@@ -33,7 +33,7 @@ Signed-off-by: Daniel P. Berrange <berrange@redhat.com>
  1 file changed, 8 insertions(+), 2 deletions(-)
 
 diff --git a/src/util/vircrypto.c b/src/util/vircrypto.c
-index 03410a1..8f1e0b7 100644
+index 03410a1a4..8f1e0b7b7 100644
 --- a/src/util/vircrypto.c
 +++ b/src/util/vircrypto.c
 @@ -152,8 +152,14 @@ virCryptoEncryptDataAESgnutls(gnutls_cipher_algorithm_t gnutls_enc_alg,

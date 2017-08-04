@@ -70,6 +70,13 @@
 %define with_storage_gluster 0%{!?_without_storage_gluster:1}
 %define with_numactl          0%{!?_without_numactl:1}
 
+# F25+ has zfs-fuse
+%if 0%{?fedora} >= 25
+    %define with_storage_zfs      0%{!?_without_storage_zfs:1}
+%else
+    %define with_storage_zfs      0
+%endif
+
 # A few optional bits off by default, we enable later
 %define with_fuse          0%{!?_without_fuse:0}
 %define with_cgconfig      0%{!?_without_cgconfig:0}
@@ -112,6 +119,12 @@
         %define with_storage_rbd 0
     %endif
 %endif
+
+# zfs-fuse is not available on some architectures
+%ifarch s390 s390x aarch64
+    %define with_storage_zfs 0
+%endif
+
 
 # RHEL doesn't ship OpenVZ, VBox, UML, PowerHypervisor,
 # VMware, libxenserver (xenapi), libxenlight (Xen 4.1 and newer),
@@ -220,7 +233,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 2.2.1
-Release: 2%{?dist}%{?extra_release}
+Release: 3%{?dist}%{?extra_release}
 License: LGPLv2+
 Group: Development/Libraries
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
@@ -233,6 +246,13 @@ Source: http://libvirt.org/sources/%{?mainturl}libvirt-%{version}.tar.xz
 
 # Fix padding of encrypted data (bz #1452622)
 Patch0001: 0001-Fix-padding-of-encrypted-data.patch
+# Enable ZFS storage driver (bz #1471912)
+Patch0002: 0002-spec-Add-support-for-building-the-zfs-storage-driver.patch
+# Don't use cgroup mount points from /proc/mounts that are hidden (bz
+# #1470593)
+Patch0003: 0003-Avoid-hidden-cgroup-mount-points.patch
+# disk driver name=... should be optional (bz #1473091)
+Patch0004: 0004-docs-schema-make-disk-driver-name-attribute-optional.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-config-network = %{version}-%{release}
@@ -366,6 +386,12 @@ BuildRequires: glusterfs-devel >= 3.4.1
 %endif
 %if %{with_storage_sheepdog}
 BuildRequires: sheepdog
+%endif
+%if %{with_storage_zfs}
+# Support any conforming implementation of zfs. On stock Fedora
+# this is zfs-fuse, but could be zfsonlinux upstream RPMs
+BuildRequires: /sbin/zfs
+BuildRequires: /sbin/zpool
 %endif
 %if %{with_numactl}
 # For QEMU/LXC numa info
@@ -599,6 +625,11 @@ Requires: device-mapper
 %if %{with_storage_sheepdog}
 # For Sheepdog support
 Requires: sheepdog
+%endif
+%if %{with_storage_zfs}
+# Support any conforming implementation of zfs
+Requires: /sbin/zfs
+Requires: /sbin/zpool
 %endif
 %if %{with_qemu}
 # From QEMU RPMs
@@ -1066,6 +1097,12 @@ rm -rf .git
     %define arg_storage_gluster --without-storage-gluster
 %endif
 
+%if %{with_storage_zfs}
+    %define arg_storage_zfs --with-storage-zfs
+%else
+    %define arg_storage_zfs --without-storage-zfs
+%endif
+
 %if %{with_numactl}
     %define arg_numactl --with-numactl
 %else
@@ -1173,6 +1210,7 @@ rm -f po/stamp-po
            %{?arg_storage_rbd} \
            %{?arg_storage_sheepdog} \
            %{?arg_storage_gluster} \
+           %{?arg_storage_zfs} \
            %{?arg_numactl} \
            %{?arg_numad} \
            --with-capng \
@@ -1914,6 +1952,12 @@ exit 0
 
 
 %changelog
+* Fri Aug 04 2017 Cole Robinson <crobinso@redhat.com> - 2.2.1-3
+- Enable ZFS storage driver (bz #1471912)
+- Don't use cgroup mount points from /proc/mounts that are hidden (bz
+  #1470593)
+- disk driver name=... should be optional (bz #1473091)
+
 * Tue May 30 2017 Cole Robinson <crobinso@redhat.com> - 2.2.1-2
 - Fix padding of encrypted data (bz #1452622)
 
