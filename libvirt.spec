@@ -240,7 +240,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 3.7.0
-Release: 1%{?dist}%{?extra_release}
+Release: 2%{?dist}%{?extra_release}
 License: LGPLv2+
 Group: Development/Libraries
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
@@ -250,6 +250,12 @@ URL: https://libvirt.org/
     %define mainturl stable_updates/
 %endif
 Source: https://libvirt.org/sources/%{?mainturl}libvirt-%{version}.tar.xz
+
+# Fix TPM2 passthrough (bz #1486240)
+Patch0001: 0001-tpm-Use-dev-null-for-cancel-path-if-none-was-found.patch
+# Fix spice GL qemu:///system rendernode permissions (bz #1460804)
+Patch0002: 0002-security-add-MANAGER_MOUNT_NAMESPACE-flag.patch
+Patch0003: 0003-security-dac-relabel-spice-rendernode.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-config-network = %{version}-%{release}
@@ -2121,6 +2127,10 @@ exit 0
 
 
 %changelog
+* Fri Sep 15 2017 Cole Robinson <crobinso@redhat.com> - 3.7.0-2
+- Fix TPM2 passthrough (bz #1486240)
+- Fix spice GL qemu:///system rendernode permissions (bz #1460804)
+
 * Mon Sep  4 2017 Daniel P. Berrange <berrange@redhat.com> - 3.7.0-1
 - Rebase to version 3.7.0
 
