@@ -240,7 +240,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 3.7.0
-Release: 2%{?dist}%{?extra_release}
+Release: 3%{?dist}%{?extra_release}
 License: LGPLv2+
 Group: Development/Libraries
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
@@ -256,6 +256,17 @@ Patch0001: 0001-tpm-Use-dev-null-for-cancel-path-if-none-was-found.patch
 # Fix spice GL qemu:///system rendernode permissions (bz #1460804)
 Patch0002: 0002-security-add-MANAGER_MOUNT_NAMESPACE-flag.patch
 Patch0003: 0003-security-dac-relabel-spice-rendernode.patch
+# CVE-2017-1000256:  libvirt: TLS certificate verification disabled for
+# clients (bz #1503687)
+Patch0004: 0004-qemu-ensure-TLS-clients-always-verify-the-server-cer.patch
+# Fix qemu image locking with shared disks (bz #1513447)
+Patch0005: 0005-qemu-Move-snapshot-disk-validation-functions-into-on.patch
+Patch0006: 0006-qemu-block-Add-function-to-check-if-storage-source-a.patch
+Patch0007: 0007-qemu-domain-Reject-shared-disk-access-if-backing-for.patch
+Patch0008: 0008-qemu-snapshot-Disallow-snapshot-of-unsupported-share.patch
+Patch0009: 0009-qemu-Disallow-pivot-of-shared-disks-to-unsupported-s.patch
+Patch0010: 0010-qemu-caps-Add-capability-for-share-rw-disk-option.patch
+Patch0011: 0011-qemu-command-Mark-shared-disks-as-such-in-qemu.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-config-network = %{version}-%{release}
@@ -2127,6 +2138,11 @@ exit 0
 
 
 %changelog
+* Mon Dec 04 2017 Cole Robinson <crobinso@redhat.com> - 3.7.0-3
+- CVE-2017-1000256:  libvirt: TLS certificate verification disabled for
+  clients (bz #1503687)
+- Fix qemu image locking with shared disks (bz #1513447)
+
 * Fri Sep 15 2017 Cole Robinson <crobinso@redhat.com> - 3.7.0-2
 - Fix TPM2 passthrough (bz #1486240)
 - Fix spice GL qemu:///system rendernode permissions (bz #1460804)

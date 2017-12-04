@@ -20,10 +20,11 @@ diff --git a/src/security/security_dac.c b/src/security/security_dac.c
 index 507be44a2..349dbe81d 100644
 --- a/src/security/security_dac.c
 +++ b/src/security/security_dac.c
-@@ -1381,6 +1381,54 @@ virSecurityDACRestoreTPMFileLabel(virSecurityManagerPtr mgr,
+@@ -1380,6 +1380,54 @@ virSecurityDACRestoreTPMFileLabel(virSecurityManagerPtr mgr,
+ }
  
  
- static int
++static int
 +virSecurityDACSetGraphicsLabel(virSecurityManagerPtr mgr,
 +                               virDomainDefPtr def,
 +                               virDomainGraphicsDefPtr gfx)
@@ -71,10 +72,9 @@ index 507be44a2..349dbe81d 100644
 +}
 +
 +
-+static int
+ static int
  virSecurityDACSetInputLabel(virSecurityManagerPtr mgr,
                              virDomainDefPtr def,
-                             virDomainInputDefPtr input)
 @@ -1491,6 +1539,11 @@ virSecurityDACRestoreAllLabel(virSecurityManagerPtr mgr,
              rc = -1;
      }

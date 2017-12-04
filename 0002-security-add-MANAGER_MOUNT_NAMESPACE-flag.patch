@@ -42,10 +42,11 @@ index ca7a6af6d..507be44a2 100644
      char *baselabel;
      virSecurityManagerDACChownCallback chownCallback;
  };
-@@ -238,6 +239,15 @@ virSecurityDACSetDynamicOwnership(virSecurityManagerPtr mgr,
+@@ -237,6 +238,15 @@ virSecurityDACSetDynamicOwnership(virSecurityManagerPtr mgr,
+     priv->dynamicOwnership = dynamicOwnership;
  }
  
- void
++void
 +virSecurityDACSetMountNamespace(virSecurityManagerPtr mgr,
 +                                bool mountNamespace)
 +{
@@ -54,10 +55,9 @@ index ca7a6af6d..507be44a2 100644
 +}
 +
 +
-+void
+ void
  virSecurityDACSetChownCallback(virSecurityManagerPtr mgr,
                                 virSecurityManagerDACChownCallback chownCallback)
- {
 diff --git a/src/security/security_dac.h b/src/security/security_dac.h
 index 846cefbb5..97681c961 100644
 --- a/src/security/security_dac.h
