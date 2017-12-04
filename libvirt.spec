@@ -240,7 +240,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 3.2.1
-Release: 6%{?dist}%{?extra_release}
+Release: 7%{?dist}%{?extra_release}
 License: LGPLv2+
 Group: Development/Libraries
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
@@ -287,6 +287,9 @@ Patch0106: 0106-security-dac-relabel-spice-rendernode.patch
 Patch0107: 0107-qemu-Honour-on_reboot.patch
 # Fix disk images in /dev/shm (bz #1482146)
 Patch0108: 0108-qemuDomainBuildNamespace-Move-dev-mountpoints-later.patch
+# CVE-2017-1000256:  libvirt: TLS certificate verification disabled for
+# clients (bz #1503687)
+Patch0109: 0109-qemu-ensure-TLS-clients-always-verify-the-server-cer.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-config-network = %{version}-%{release}
@@ -2154,6 +2157,10 @@ exit 0
 
 
 %changelog
+* Mon Dec 04 2017 Cole Robinson <crobinso@redhat.com> - 3.2.1-7
+- CVE-2017-1000256:  libvirt: TLS certificate verification disabled for
+  clients (bz #1503687)
+
 * Fri Sep 15 2017 Cole Robinson <crobinso@redhat.com> - 3.2.1-6
 - Fix TPM2 passthrough (bz #1486240)
 - Fix spice GL qemu:///system rendernode permissions (bz #1460804)

@@ -19,10 +19,11 @@ diff --git a/src/cpu/cpu.c b/src/cpu/cpu.c
 index 8a407ac18..702b14dbb 100644
 --- a/src/cpu/cpu.c
 +++ b/src/cpu/cpu.c
-@@ -358,6 +358,26 @@ virCPUDataFree(virCPUDataPtr data)
+@@ -357,6 +357,26 @@ virCPUDataFree(virCPUDataPtr data)
+ }
  
  
- /**
++/**
 + * virCPUGetHostIsSupported:
 + *
 + * @arch: CPU architecture
@@ -42,10 +43,9 @@ index 8a407ac18..702b14dbb 100644
 +}
 +
 +
-+/**
+ /**
   * virCPUGetHost:
   *
-  * @arch: CPU architecture
 diff --git a/src/cpu/cpu.h b/src/cpu/cpu.h
 index 352445c40..c6ca111e9 100644
 --- a/src/cpu/cpu.h
