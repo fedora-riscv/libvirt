@@ -1,0 +1,36 @@
+From: Peter Krempa <pkrempa@redhat.com>
+Date: Wed, 20 Dec 2017 12:58:36 +0100
+Subject: [PATCH] util: probe: Add quiet versions of the "PROBE" macro
+
+PROBE macro adds a logging entry, when used in places seeing a lot of
+traffic this can cause a significant slowdown.
+
+(cherry picked from commit f06e488d5484031a76e7ed231c8fef8fa1181d2c)
+---
+ src/util/virprobe.h | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/src/util/virprobe.h b/src/util/virprobe.h
+index 7565954af..bd8c32964 100644
+--- a/src/util/virprobe.h
++++ b/src/util/virprobe.h
+@@ -90,11 +90,19 @@
+         PROBE_EXPAND(LIBVIRT_ ## NAME,                       \
+                      VIR_ADD_CASTS(__VA_ARGS__));            \
+     }
++
++#  define PROBE_QUIET(NAME, FMT, ...) \
++    if (LIBVIRT_ ## NAME ## _ENABLED()) { \
++        PROBE_EXPAND(LIBVIRT_ ## NAME, \
++                     VIR_ADD_CASTS(__VA_ARGS__)); \
++    }
+ # else
+ #  define PROBE(NAME, FMT, ...)                              \
+     VIR_INFO_INT(&virLogSelf,                                \
+                  __FILE__, __LINE__, __func__,               \
+                  #NAME ": " FMT, __VA_ARGS__);
++
++#  define PROBE_QUIET(NAME, FMT, ...)
+ # endif
+ 
+ #endif /* __VIR_PROBE_H__ */

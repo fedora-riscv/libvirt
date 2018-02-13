@@ -240,7 +240,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 3.7.0
-Release: 3%{?dist}%{?extra_release}
+Release: 4%{?dist}%{?extra_release}
 License: LGPLv2+
 Group: Development/Libraries
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
@@ -267,6 +267,16 @@ Patch0008: 0008-qemu-snapshot-Disallow-snapshot-of-unsupported-share.patch
 Patch0009: 0009-qemu-Disallow-pivot-of-shared-disks-to-unsupported-s.patch
 Patch0010: 0010-qemu-caps-Add-capability-for-share-rw-disk-option.patch
 Patch0011: 0011-qemu-command-Mark-shared-disks-as-such-in-qemu.patch
+
+# CVE-2018-5748: resource exhaustion via qemuMonitorIORead() (bz #1535785)
+Patch0101: 0101-util-probe-Add-quiet-versions-of-the-PROBE-macro.patch
+Patch0102: 0102-qemu-monitor-Decrease-logging-verbosity.patch
+# CVE-2018-6764: code injection via libvirt_lxc (bz #1542815)
+Patch0103: 0103-virlog-determine-the-hostname-on-startup-CVE-2018-67.patch
+Patch0104: 0104-util-Fix-syntax-check.patch
+Patch0105: 0105-log-fix-deadlock-obtaining-hostname-related-CVE-2018.patch
+# Fix hotplug disk failure (bz #1540872)
+Patch0106: 0106-qemuDomainAttachDeviceMknodHelper-Remove-symlink-bef.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-config-network = %{version}-%{release}
@@ -2138,6 +2148,11 @@ exit 0
 
 
 %changelog
+* Tue Feb 13 2018 Cole Robinson <crobinso@redhat.com> - 3.7.0-4
+- CVE-2018-5748: resource exhaustion via qemuMonitorIORead() (bz #1535785)
+- CVE-2018-6764: code injection via libvirt_lxc (bz #1542815)
+- Fix hotplug disk failure (bz #1540872)
+
 * Mon Dec 04 2017 Cole Robinson <crobinso@redhat.com> - 3.7.0-3
 - CVE-2017-1000256:  libvirt: TLS certificate verification disabled for
   clients (bz #1503687)

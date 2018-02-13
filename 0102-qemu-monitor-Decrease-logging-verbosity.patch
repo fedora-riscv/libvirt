@@ -1,0 +1,49 @@
+From: Peter Krempa <pkrempa@redhat.com>
+Date: Wed, 20 Dec 2017 13:09:07 +0100
+Subject: [PATCH] qemu: monitor: Decrease logging verbosity
+
+The PROBE macro used in qemuMonitorIOProcess and the VIR_DEBUG message
+in qemuMonitorJSONIOProcess create a lot of logging churn when debug
+logging is enabled during monitor communication.
+
+The messages logged from the PROBE macro are rather useless since they
+are reporting the partial state of receiving the reply from qemu. The
+actual full reply is still logged in qemuMonitorJSONIOProcessLine once
+the full message is received.
+
+(cherry picked from commit f10bb3347b43d900ff361cda5fe1996782284991)
+---
+ src/qemu/qemu_monitor.c      | 4 ++--
+ src/qemu/qemu_monitor_json.c | 3 +++
+ 2 files changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/src/qemu/qemu_monitor.c b/src/qemu/qemu_monitor.c
+index 19082d8bf..3def28852 100644
+--- a/src/qemu/qemu_monitor.c
++++ b/src/qemu/qemu_monitor.c
+@@ -434,8 +434,8 @@ qemuMonitorIOProcess(qemuMonitorPtr mon)
+ # endif
+ #endif
+ 
+-    PROBE(QEMU_MONITOR_IO_PROCESS,
+-          "mon=%p buf=%s len=%zu", mon, mon->buffer, mon->bufferOffset);
++    PROBE_QUIET(QEMU_MONITOR_IO_PROCESS, "mon=%p buf=%s len=%zu",
++                mon, mon->buffer, mon->bufferOffset);
+ 
+     if (mon->json)
+         len = qemuMonitorJSONIOProcess(mon,
+diff --git a/src/qemu/qemu_monitor_json.c b/src/qemu/qemu_monitor_json.c
+index df5fb7c8f..461aae089 100644
+--- a/src/qemu/qemu_monitor_json.c
++++ b/src/qemu/qemu_monitor_json.c
+@@ -259,7 +259,10 @@ int qemuMonitorJSONIOProcess(qemuMonitorPtr mon,
+         }
+     }
+ 
++#if DEBUG_IO
+     VIR_DEBUG("Total used %d bytes out of %zd available in buffer", used, len);
++#endif
++
+     return used;
+ }
+ 
