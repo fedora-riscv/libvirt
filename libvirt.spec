@@ -13,7 +13,7 @@
 # Default to skipping autoreconf.  Distros can change just this one line
 # (or provide a command-line override) if they backport any patches that
 # touch configure.ac or Makefile.am.
-%{!?enable_autotools:%global enable_autotools 0}
+%{!?enable_autotools:%global enable_autotools 1}
 
 
 # The hypervisor drivers that run in libvirtd
@@ -240,7 +240,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 3.7.0
-Release: 4%{?dist}%{?extra_release}
+Release: 5%{?dist}%{?extra_release}
 License: LGPLv2+
 Group: Development/Libraries
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
@@ -277,6 +277,17 @@ Patch0104: 0104-util-Fix-syntax-check.patch
 Patch0105: 0105-log-fix-deadlock-obtaining-hostname-related-CVE-2018.patch
 # Fix hotplug disk failure (bz #1540872)
 Patch0106: 0106-qemuDomainAttachDeviceMknodHelper-Remove-symlink-bef.patch
+
+# Spectre / SSBD
+Patch1000: 1000-util-add-virFileReadHeaderQuiet-wrapper-around-virFi.patch
+Patch1001: 1001-cpu_x86-Copy-CPU-signature-from-ancestor.patch
+Patch1002: 1002-util-introduce-virHostCPUGetMicrocodeVersion.patch
+Patch1003: 1003-cpu_x86-Rename-virCPUx86MapInitialize.patch
+Patch1004: 1004-conf-include-x86-microcode-version-in-virsh-capabilt.patch
+Patch1005: 1005-qemu-capabilities-force-update-if-the-microcode-vers.patch
+Patch1006: 1006-cpu-add-CPU-features-and-model-for-indirect-branch-p.patch
+Patch1007: 1007-cpu-define-the-ssbd-CPUID-feature-bit-CVE-2018-3639.patch
+Patch1008: 1008-cpu-define-the-virt-ssbd-CPUID-feature-bit-CVE-2018-.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-config-network = %{version}-%{release}
@@ -2148,6 +2159,9 @@ exit 0
 
 
 %changelog
+* Wed Jun 20 2018 Daniel P. Berrangé <berrange@redhat.com> - 3.7.0-5
+- Add new CPU features for CVE-2017-5715 and CVE-2018-3639
+
 * Tue Feb 13 2018 Cole Robinson <crobinso@redhat.com> - 3.7.0-4
 - CVE-2018-5748: resource exhaustion via qemuMonitorIORead() (bz #1535785)
 - CVE-2018-6764: code injection via libvirt_lxc (bz #1542815)

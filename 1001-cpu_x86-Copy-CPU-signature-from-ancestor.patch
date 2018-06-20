@@ -1,0 +1,36 @@
+From a84e70ad247da5d3ad13615efd70b91951392aa1 Mon Sep 17 00:00:00 2001
+From: Jiri Denemark <jdenemar@redhat.com>
+Date: Fri, 5 Jan 2018 17:43:03 +0100
+Subject: [PATCH 12/19] cpu_x86: Copy CPU signature from ancestor
+
+When specifying a new CPU model in cpu_map.xml as an extension to an
+existing model, we forgot to copy the signature (family + model) from
+the original CPU model.
+
+We don't use this way of specifying CPU models, but it's still supported
+and it becomes useful when someone wants to quickly hack up a CPU model
+for testing or when creating additional variants of existing models to
+help with fixing some spectral issues.
+
+Signed-off-by: Jiri Denemark <jdenemar@redhat.com>
+Reviewed-by: Pavel Hrdina <phrdina@redhat.com>
+(cherry picked from commit b427cf4831d0ea7aac9dd1a3aa7682478356a483)
+---
+ src/cpu/cpu_x86.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/src/cpu/cpu_x86.c b/src/cpu/cpu_x86.c
+index 2864454211..3b7a6f95fe 100644
+--- a/src/cpu/cpu_x86.c
++++ b/src/cpu/cpu_x86.c
+@@ -1206,6 +1206,7 @@ x86ModelParse(xmlXPathContextPtr ctxt,
+         VIR_FREE(name);
+ 
+         model->vendor = ancestor->vendor;
++        model->signature = ancestor->signature;
+         if (x86DataCopy(&model->data, &ancestor->data) < 0)
+             goto error;
+     }
+-- 
+2.17.0
+

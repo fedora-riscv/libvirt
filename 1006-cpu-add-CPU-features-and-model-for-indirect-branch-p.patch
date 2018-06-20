@@ -1,0 +1,142 @@
+From ac0e85360cd8f25160b67ee9fb45663d20f82c1d Mon Sep 17 00:00:00 2001
+From: Paolo Bonzini <pbonzini@redhat.com>
+Date: Tue, 19 Jun 2018 16:51:13 +0100
+Subject: [PATCH 17/19] cpu: add CPU features and model for indirect branch
+ prediction protection
+
+CVE-2017-5715
+
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Jiri Denemark <jdenemar@redhat.com>
+---
+ src/cpu/cpu_map.xml | 44 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 44 insertions(+)
+
+diff --git a/src/cpu/cpu_map.xml b/src/cpu/cpu_map.xml
+index 8e7ac4973d..c31e7ce36a 100644
+--- a/src/cpu/cpu_map.xml
++++ b/src/cpu/cpu_map.xml
+@@ -283,6 +283,9 @@
+     <feature name='avx512-4fmaps'>
+       <cpuid eax_in='0x07' ecx_in='0x00' edx='0x00000008'/>
+     </feature>
++    <feature name='spec-ctrl'>
++      <cpuid eax_in='0x07' ecx_in='0x00' edx='0x04000000'/>
++    </feature>
+ 
+     <!-- Processor Extended State Enumeration sub leaf 1 -->
+     <feature name='xsaveopt'>
+@@ -411,6 +414,11 @@
+       <cpuid eax_in='0x80000007' edx='0x00000100'/>
+     </feature>
+ 
++    <!-- More AMD-specific features -->
++    <feature name='ibpb'>
++      <cpuid eax_in='0x80000008' ebx='0x00001000'/>
++    </feature>
++
+     <!-- models -->
+     <model name='486'>
+       <feature name='fpu'/>
+@@ -857,6 +865,10 @@
+       <feature name='syscall'/>
+       <feature name='tsc'/>
+     </model>
++    <model name='Nehalem-IBRS'>
++      <model name='Nehalem'/>
++      <feature name='spec-ctrl'/>
++    </model>
+ 
+     <model name='Westmere'>
+       <signature family='6' model='44'/>
+@@ -894,6 +906,10 @@
+       <feature name='syscall'/>
+       <feature name='tsc'/>
+     </model>
++    <model name='Westmere-IBRS'>
++      <model name='Westmere'/>
++      <feature name='spec-ctrl'/>
++    </model>
+ 
+     <model name='SandyBridge'>
+       <signature family='6' model='42'/>
+@@ -937,6 +953,10 @@
+       <feature name='x2apic'/>
+       <feature name='xsave'/>
+     </model>
++    <model name='SandyBridge-IBRS'>
++      <model name='SandyBridge'/>
++      <feature name='spec-ctrl'/>
++    </model>
+ 
+     <model name='IvyBridge'>
+       <signature family='6' model='58'/>
+@@ -986,6 +1006,10 @@
+       <feature name='x2apic'/>
+       <feature name='xsave'/>
+     </model>
++    <model name='IvyBridge-IBRS'>
++      <model name='IvyBridge'/>
++      <feature name='spec-ctrl'/>
++    </model>
+ 
+     <model name='Haswell-noTSX'>
+       <signature family='6' model='60'/>
+@@ -1039,6 +1063,10 @@
+       <feature name='x2apic'/>
+       <feature name='xsave'/>
+     </model>
++    <model name='Haswell-noTSX-IBRS'>
++      <model name='Haswell-noTSX'/>
++      <feature name='spec-ctrl'/>
++    </model>
+ 
+     <model name='Haswell'>
+       <signature family='6' model='60'/>
+@@ -1094,6 +1122,10 @@
+       <feature name='x2apic'/>
+       <feature name='xsave'/>
+     </model>
++    <model name='Haswell-IBRS'>
++      <model name='Haswell'/>
++      <feature name='spec-ctrl'/>
++    </model>
+ 
+     <model name='Broadwell-noTSX'>
+       <signature family='6' model='61'/>
+@@ -1151,6 +1183,10 @@
+       <feature name='x2apic'/>
+       <feature name='xsave'/>
+     </model>
++    <model name='Broadwell-noTSX-IBRS'>
++      <model name='Broadwell-noTSX'/>
++      <feature name='spec-ctrl'/>
++    </model>
+ 
+     <model name='Broadwell'>
+       <signature family='6' model='61'/>
+@@ -1210,6 +1246,10 @@
+       <feature name='x2apic'/>
+       <feature name='xsave'/>
+     </model>
++    <model name='Broadwell-IBRS'>
++      <model name='Broadwell'/>
++      <feature name='spec-ctrl'/>
++    </model>
+ 
+     <model name='Skylake-Client'>
+       <signature family='6' model='94'/>
+@@ -1278,6 +1318,10 @@
+       <feature name='xsavec'/>
+       <feature name='xsaveopt'/>
+     </model>
++    <model name='Skylake-Client-IBRS'>
++      <model name='Skylake-Client'/>
++      <feature name='spec-ctrl'/>
++    </model>
+ 
+     <!-- AMD CPUs -->
+     <model name='athlon'>
+-- 
+2.17.0
+
