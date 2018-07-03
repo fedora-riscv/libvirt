@@ -245,7 +245,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 3.7.0
-Release: 5%{?dist}%{?extra_release}
+Release: 6%{?dist}%{?extra_release}
 License: LGPLv2+
 Group: Development/Libraries
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
@@ -282,6 +282,9 @@ Patch0104: 0104-util-Fix-syntax-check.patch
 Patch0105: 0105-log-fix-deadlock-obtaining-hostname-related-CVE-2018.patch
 # Fix hotplug disk failure (bz #1540872)
 Patch0106: 0106-qemuDomainAttachDeviceMknodHelper-Remove-symlink-bef.patch
+# nwfilter: increase pcap buffer size to be compatible with TPACKET_V3 (bz
+# #1547237)
+Patch0107: 0107-nwfilter-increase-pcap-buffer-size-to-be-compatible-.patch
 
 # Spectre / SSBD
 Patch1000: 1000-util-add-virFileReadHeaderQuiet-wrapper-around-virFi.patch
@@ -2158,6 +2161,10 @@ exit 0
 
 
 %changelog
+* Tue Jul 03 2018 Cole Robinson <crobinso@redhat.com> - 3.7.0-6
+- nwfilter: increase pcap buffer size to be compatible with TPACKET_V3 (bz
+  #1547237)
+
 * Wed Jun 20 2018 Daniel P. Berrangé <berrange@redhat.com> - 3.7.0-5
 - Add new CPU features for CVE-2017-5715 and CVE-2018-3639
 
