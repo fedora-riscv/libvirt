@@ -1,0 +1,64 @@
+From: Matthias Bolte <matthias.bolte@googlemail.com>
+Date: Thu, 2 Aug 2018 17:33:37 +0200
+Subject: [PATCH] esx: Fix double-free and freeing static strings in
+ esxDomainSetAutostart
+
+Since commit ae83e02f3dd7fe99fed5d8159a35b666fafeafd5#l3393 the
+newPowerInfo pointer itself is used to track the ownership of the
+AutoStartPowerInfo object to make Coverity understand the code better.
+This broke the code that unset some members of the AutoStartPowerInfo
+object that should not be freed the normal way.
+
+Instead, transfer ownership of the AutoStartPowerInfo object to the
+HostAutoStartManagerConfig object before filling in the values that
+need special handling. This allows to free the AutoStartPowerInfo
+directly without having to deal with the special values, or to let
+the old (now restored) logic handle the special values again.
+
+Signed-off-by: Matthias Bolte <matthias.bolte@googlemail.com>
+Tested-by: Marcos Paulo de Souza <marcos.souza.org@gmail.com>
+Reviewed-by: John Ferlan <jferlan@redhat.com>
+(cherry picked from commit 3ad77f853230f870efa396636e008292c7f2b1c0)
+---
+ src/esx/esx_driver.c | 14 ++++----------
+ 1 file changed, 4 insertions(+), 10 deletions(-)
+
+diff --git a/src/esx/esx_driver.c b/src/esx/esx_driver.c
+index b065cdc513..9a7006c6e5 100644
+--- a/src/esx/esx_driver.c
++++ b/src/esx/esx_driver.c
+@@ -3422,7 +3422,10 @@ esxDomainSetAutostart(virDomainPtr domain, int autostart)
+     if (esxVI_AutoStartPowerInfo_Alloc(&newPowerInfo) < 0 ||
+         esxVI_Int_Alloc(&newPowerInfo->startOrder) < 0 ||
+         esxVI_Int_Alloc(&newPowerInfo->startDelay) < 0 ||
+-        esxVI_Int_Alloc(&newPowerInfo->stopDelay) < 0) {
++        esxVI_Int_Alloc(&newPowerInfo->stopDelay) < 0 ||
++        esxVI_AutoStartPowerInfo_AppendToList(&spec->powerInfo,
++                                              newPowerInfo) < 0) {
++        esxVI_AutoStartPowerInfo_Free(&newPowerInfo);
+         goto cleanup;
+     }
+ 
+@@ -3434,13 +3437,6 @@ esxDomainSetAutostart(virDomainPtr domain, int autostart)
+     newPowerInfo->stopDelay->value = -1; /* use system default */
+     newPowerInfo->stopAction = (char *)"none";
+ 
+-    if (esxVI_AutoStartPowerInfo_AppendToList(&spec->powerInfo,
+-                                              newPowerInfo) < 0) {
+-        goto cleanup;
+-    }
+-
+-    newPowerInfo = NULL;
+-
+     if (esxVI_ReconfigureAutostart
+           (priv->primary,
+            priv->primary->hostSystem->configManager->autoStartManager,
+@@ -3462,8 +3458,6 @@ esxDomainSetAutostart(virDomainPtr domain, int autostart)
+     esxVI_AutoStartDefaults_Free(&defaults);
+     esxVI_AutoStartPowerInfo_Free(&powerInfoList);
+ 
+-    esxVI_AutoStartPowerInfo_Free(&newPowerInfo);
+-
+     return result;
+ }
+ 

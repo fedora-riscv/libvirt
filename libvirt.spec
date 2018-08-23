@@ -252,7 +252,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 4.1.0
-Release: 4%{?dist}%{?extra_release}
+Release: 5%{?dist}%{?extra_release}
 License: LGPLv2+
 Group: Development/Libraries
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
@@ -262,14 +262,21 @@ URL: https://libvirt.org/
     %define mainturl stable_updates/
 %endif
 Source: https://libvirt.org/sources/%{?mainturl}libvirt-%{version}.tar.xz
-Patch1: 0001-tests-force-use-of-NORMAL-TLS-priority-in-test-suite.patch
-Patch2: 0001-cpu-define-the-ssbd-CPUID-feature-bit-CVE-2018-3639.patch
-Patch3: 0002-cpu-define-the-virt-ssbd-CPUID-feature-bit-CVE-2018-.patch
+
+# Fix test suite
+Patch0001: 0001-cpu-define-the-ssbd-CPUID-feature-bit-CVE-2018-3639.patch
+# Add new CPU features for speculative store bypass (CVE-2018-3639)
+Patch0002: 0002-tests-force-use-of-NORMAL-TLS-priority-in-test-suite.patch
+Patch0003: 0003-cpu-define-the-virt-ssbd-CPUID-feature-bit-CVE-2018-.patch
 # Fix virtlockd-admin.socket syntax (bz #1586239)
-Patch5: 0004-lockd-fix-typo-in-virtlockd-admin.socket.patch
+Patch0004: 0004-lockd-fix-typo-in-virtlockd-admin.socket.patch
 # nwfilter: increase pcap buffer size to be compatible with TPACKET_V3 (bz
 # #1547237)
-Patch4: 0005-nwfilter-increase-pcap-buffer-size-to-be-compatible-.patch
+Patch0005: 0005-nwfilter-increase-pcap-buffer-size-to-be-compatible-.patch
+# Fix *LookupBy* APIs hash races (bz #1621471)
+Patch0006: 0006-util-don-t-check-for-parallel-iteration-in-hash-rela.patch
+# ESX: crash when user sets autostart flags to a domain (bz #1611921)
+Patch0007: 0007-esx-Fix-double-free-and-freeing-static-strings-in-es.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-config-network = %{version}-%{release}
@@ -2204,6 +2211,10 @@ exit 0
 
 
 %changelog
+* Thu Aug 23 2018 Cole Robinson <crobinso@redhat.com> - 4.1.0-5
+- Fix *LookupBy* APIs hash races (bz #1621471)
+- ESX: crash when user sets autostart flags to a domain (bz #1611921)
+
 * Tue Jul 03 2018 Cole Robinson <crobinso@redhat.com> - 4.1.0-4
 - Fix virtlockd-admin.socket syntax (bz #1586239)
 - nwfilter: increase pcap buffer size to be compatible with TPACKET_V3 (bz
