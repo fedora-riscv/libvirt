@@ -224,7 +224,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 4.7.0
-Release: 1%{?dist}%{?extra_release}
+Release: 2%{?dist}%{?extra_release}
 License: LGPLv2+
 URL: https://libvirt.org/
 
@@ -232,6 +232,13 @@ URL: https://libvirt.org/
     %define mainturl stable_updates/
 %endif
 Source: https://libvirt.org/sources/%{?mainturl}libvirt-%{version}.tar.xz
+
+# Mouse cursor doubled on QEMU VNC on ppc64le (bz #1565253)
+Patch0001: 0001-qemu-Allow-creating-ppc64-guests-with-graphics-and-n.patch
+# CVE-2019-3840: NULL deref after running qemuAgentGetInterfaces (bz
+# #1665229)
+Patch0002: 0002-qemu-Remove-duplicated-qemuAgentCheckError.patch
+Patch0003: 0003-qemu-require-reply-from-guest-agent-in-qemuAgentGetI.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-config-network = %{version}-%{release}
@@ -1933,6 +1940,11 @@ exit 0
 
 
 %changelog
+* Tue Apr 02 2019 Cole Robinson <crobinso@redhat.com> - 4.7.0-2
+- Mouse cursor doubled on QEMU VNC on ppc64le (bz #1565253)
+- CVE-2019-3840: NULL deref after running qemuAgentGetInterfaces (bz
+  #1665229)
+
 * Tue Sep  4 2018 Daniel P. Berrangé <berrange@redhat.com> - 4.7.0-1
 - Update to 4.7.0 release
 

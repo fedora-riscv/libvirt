@@ -1,0 +1,34 @@
+From: John Ferlan <jferlan@redhat.com>
+Date: Fri, 7 Sep 2018 16:01:27 -0400
+Subject: [PATCH] qemu: Remove duplicated qemuAgentCheckError
+
+Commit 5b3492fadb moved qemuAgentCheckError calls into
+qemuAgentCommand for various reasons; however, subsequent
+commit 0977b8aa0 adding a new command made call again
+So let's just remove the duplicitous call from
+qemuAgentGetInterfaces.
+
+Signed-off-by: John Ferlan <jferlan@redhat.com>
+ACKed-by: Michal Privoznik <mprivozn@redhat.com>
+(cherry picked from commit 9ed175fbc2deecfdaeabca7bc77c7e7ae33a3377)
+---
+ src/qemu/qemu_agent.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/src/qemu/qemu_agent.c b/src/qemu/qemu_agent.c
+index bf08871f18..d235c058a5 100644
+--- a/src/qemu/qemu_agent.c
++++ b/src/qemu/qemu_agent.c
+@@ -1987,10 +1987,9 @@ qemuAgentGetInterfaces(qemuAgentPtr mon,
+     if (!(cmd = qemuAgentMakeCommand("guest-network-get-interfaces", NULL)))
+         goto cleanup;
+ 
+-    if (qemuAgentCommand(mon, cmd, &reply, false, VIR_DOMAIN_QEMU_AGENT_COMMAND_BLOCK) < 0 ||
+-        qemuAgentCheckError(cmd, reply) < 0) {
++    if (qemuAgentCommand(mon, cmd, &reply, false,
++                         VIR_DOMAIN_QEMU_AGENT_COMMAND_BLOCK) < 0)
+         goto cleanup;
+-    }
+ 
+     if (!(ret_array = virJSONValueObjectGet(reply, "return"))) {
+         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
