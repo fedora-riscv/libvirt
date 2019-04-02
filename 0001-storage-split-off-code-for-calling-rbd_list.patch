@@ -1,7 +1,6 @@
-From 092320f10b47bd6aca1f29278fcdc6b0efaf636a Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Daniel=20P=2E=20Berrang=C3=A9?= <berrange@redhat.com>
 Date: Mon, 18 Mar 2019 10:58:48 +0000
-Subject: [PATCH 1/5] storage: split off code for calling rbd_list
+Subject: [PATCH] storage: split off code for calling rbd_list
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -144,6 +143,3 @@ index 2b7af1db23..0865163756 100644
      virStorageBackendRBDFreeState(&ptr);
      return ret;
  }
--- 
-2.20.1
-

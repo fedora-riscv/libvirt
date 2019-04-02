@@ -1,8 +1,7 @@
-From b990740b12117eaaf2797141a53a30b41f07c791 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Daniel=20P=2E=20Berrang=C3=A9?= <berrange@redhat.com>
 Date: Mon, 18 Mar 2019 17:31:21 +0000
-Subject: [PATCH 3/5] network: improve error report when firewall chain
- creation fails
+Subject: [PATCH] network: improve error report when firewall chain creation
+ fails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -132,6 +131,3 @@ index baeb22bc3e..95fd64bdc7 100644
  void networkPostReloadFirewallRules(bool startup);
  
  int networkCheckRouteCollision(virNetworkDefPtr def);
--- 
-2.20.1
-

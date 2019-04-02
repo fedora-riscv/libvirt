@@ -1,7 +1,6 @@
-From e8ec2592202387cca8e45cf15bd55ed5a952f3e3 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Daniel=20P=2E=20Berrang=C3=A9?= <berrange@redhat.com>
 Date: Mon, 18 Mar 2019 11:11:38 +0000
-Subject: [PATCH 2/5] storage: add support for new rbd_list2 method
+Subject: [PATCH] storage: add support for new rbd_list2 method
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -91,6 +90,3 @@ index 0865163756..bfc3419f9c 100644
  
  
  static int
--- 
-2.20.1
-

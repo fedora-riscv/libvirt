@@ -1,7 +1,6 @@
-From 3e02ee9b5da7fc7197aaa6d57563349a7670b8a1 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Daniel=20P=2E=20Berrang=C3=A9?= <berrange@redhat.com>
 Date: Wed, 13 Mar 2019 16:21:15 +0000
-Subject: [PATCH 5/5] network: avoid trying to create global firewall rules if
+Subject: [PATCH] network: avoid trying to create global firewall rules if
  unprivileged
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -45,6 +44,3 @@ index 1da60f0a21..0e1d5efd8e 100644
      networkPreReloadFirewallRules(startup);
      virNetworkObjListForEach(driver->networks,
                               networkReloadFirewallRulesHelper,
--- 
-2.20.1
-

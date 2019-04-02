@@ -216,7 +216,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 5.1.0
-Release: 3%{?dist}
+Release: 4%{?dist}
 License: LGPLv2+
 URL: https://libvirt.org/
 
@@ -224,11 +224,22 @@ URL: https://libvirt.org/
     %define mainturl stable_updates/
 %endif
 Source: https://libvirt.org/sources/%{?mainturl}libvirt-%{version}.tar.xz
-Patch1: 0001-storage-split-off-code-for-calling-rbd_list.patch
-Patch2: 0002-storage-add-support-for-new-rbd_list2-method.patch
-Patch3: 0003-network-improve-error-report-when-firewall-chain-cre.patch
-Patch4: 0004-network-split-setup-of-ipv4-and-ipv6-top-level-chain.patch
-Patch5: 0005-network-avoid-trying-to-create-global-firewall-rules.patch
+
+# Fix use of deprecated RBD features
+Patch0001: 0001-storage-split-off-code-for-calling-rbd_list.patch
+Patch0002: 0002-storage-add-support-for-new-rbd_list2-method.patch
+# Don't require ipv6 firewall support at startup (bz #1688968)
+Patch0003: 0003-network-improve-error-report-when-firewall-chain-cre.patch
+Patch0004: 0004-network-split-setup-of-ipv4-and-ipv6-top-level-chain.patch
+# Avoid using firewalld if unprivileged
+Patch0005: 0005-network-avoid-trying-to-create-global-firewall-rules.patch
+# Mouse cursor doubled on QEMU VNC on ppc64le (bz #1565253)
+Patch0006: 0006-qemu-Allow-creating-ppc64-guests-with-graphics-and-n.patch
+# Fix VM startup with cgroupv2 (bz #1688736)
+Patch0007: 0007-util-implement-virCgroupV2-Set-Get-CpusetMems.patch
+Patch0008: 0008-util-implement-virCgroupV2-Set-Get-CpusetMemoryMigra.patch
+Patch0009: 0009-util-implement-virCgroupV2-Set-Get-CpusetCpus.patch
+Patch0010: 0010-util-enable-cgroups-v2-cpuset-controller-for-threads.patch
 
 
 Requires: libvirt-daemon = %{version}-%{release}
@@ -1900,6 +1911,10 @@ exit 0
 
 
 %changelog
+* Tue Apr 02 2019 Cole Robinson <crobinso@redhat.com> - 5.1.0-4
+- Mouse cursor doubled on QEMU VNC on ppc64le (bz #1565253)
+- Fix VM startup with cgroupv2 (bz #1688736)
+
 * Wed Mar 20 2019 Daniel P. Berrangé <berrange@redhat.com> - 5.1.0-3
 - Fix upgrades for rbd on i686 (rhbz #1688121)
 - Add missing xfsprogs-devel dep
