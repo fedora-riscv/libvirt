@@ -283,6 +283,7 @@ Patch0008: 0008-cpu_x86-Do-not-cache-microcode-version.patch
 Patch0009: 0009-qemu-Don-t-cache-microcode-version.patch
 Patch0010: 0010-cputest-Add-data-for-Intel-R-Xeon-R-CPU-E3-1225-v5.patch
 Patch0011: 0011-cpu_map-Define-md-clear-CPUID-bit.patch
+Patch0012: 0012-cpu-remove-stibp-flag-from-test-data.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-config-network = %{version}-%{release}
