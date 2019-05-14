@@ -224,7 +224,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 4.7.0
-Release: 2%{?dist}%{?extra_release}
+Release: 3%{?dist}%{?extra_release}
 License: LGPLv2+
 URL: https://libvirt.org/
 
@@ -239,6 +239,13 @@ Patch0001: 0001-qemu-Allow-creating-ppc64-guests-with-graphics-and-n.patch
 # #1665229)
 Patch0002: 0002-qemu-Remove-duplicated-qemuAgentCheckError.patch
 Patch0003: 0003-qemu-require-reply-from-guest-agent-in-qemuAgentGetI.patch
+# Define md-clear CPUID bit (CVE-2018-12126, CVE-2018-12127, CVE-2018-12130,
+# CVE-2019-11091)
+Patch0004: 0004-cpu_x86-Do-not-cache-microcode-version.patch
+Patch0005: 0005-qemu-Don-t-cache-microcode-version.patch
+Patch0006: 0006-cputest-Add-data-for-Intel-R-Xeon-R-CPU-E3-1225-v5.patch
+Patch0007: 0007-cpu_map-Define-md-clear-CPUID-bit.patch
+
 
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-config-network = %{version}-%{release}
@@ -1940,6 +1947,11 @@ exit 0
 
 
 %changelog
+* Tue May 14 2019 Daniel P. Berrangé <berrange@redhat.com> - 4.7.0-3
+- Define md-clear CPUID bit
+- Resolves: rhbz #1709977 (CVE-2018-12126), rhbz #1709979 (CVE-2018-12127),
+  rhbz #1709997 (CVE-2018-12130), rhbz #1709984 (CVE-2019-11091)
+
 * Tue Apr 02 2019 Cole Robinson <crobinso@redhat.com> - 4.7.0-2
 - Mouse cursor doubled on QEMU VNC on ppc64le (bz #1565253)
 - CVE-2019-3840: NULL deref after running qemuAgentGetInterfaces (bz
