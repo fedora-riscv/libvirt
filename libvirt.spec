@@ -252,7 +252,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 4.1.0
-Release: 6%{?dist}%{?extra_release}
+Release: 7%{?dist}%{?extra_release}
 License: LGPLv2+
 Group: Development/Libraries
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
@@ -284,6 +284,10 @@ Patch0009: 0009-qemu-Don-t-cache-microcode-version.patch
 Patch0010: 0010-cputest-Add-data-for-Intel-R-Xeon-R-CPU-E3-1225-v5.patch
 Patch0011: 0011-cpu_map-Define-md-clear-CPUID-bit.patch
 Patch0012: 0012-cpu-remove-stibp-flag-from-test-data.patch
+# Fix systemd socket permissions (CVE-2019-10132)
+Patch0013: 0013-admin-reject-clients-unless-their-UID-matches-the-cu.patch
+Patch0014: 0014-locking-restrict-sockets-to-mode-0600.patch
+Patch0015: 0015-logging-restrict-sockets-to-mode-0600.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-config-network = %{version}-%{release}
@@ -2218,6 +2222,10 @@ exit 0
 
 
 %changelog
+* Tue May 21 2019 Daniel P. Berrangé <berrange@redhat.com> - 4.1.0-7
+- Fix systemd socket permissions
+- Resolves: rhbz #1712498 (CVE-2019-10132)
+
 * Tue May 14 2019 Daniel P. Berrangé <berrange@redhat.com> - 4.1.0-6
 - Define md-clear CPUID bit
 - Resolves: rhbz #1709977 (CVE-2018-12126), rhbz #1709979 (CVE-2018-12127),
