@@ -216,7 +216,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 5.1.0
-Release: 6%{?dist}
+Release: 7%{?dist}
 License: LGPLv2+
 URL: https://libvirt.org/
 
@@ -1248,6 +1248,7 @@ rm -f po/stamp-po
            %{?enable_werror} \
            --enable-expensive-tests \
            --with-init-script=systemd \
+           --without-firewalld-zone \
            %{?arg_login_shell}
 make %{?_smp_mflags} V=1
 gzip -9 ChangeLog
@@ -1921,6 +1922,10 @@ exit 0
 
 
 %changelog
+* Wed May 29 2019 Adam Williamson <awilliam@redhat.com> - 5.1.0-7
+- Pass --without-firewalld-zone to configure
+- Resolves: rhbz #1699051
+
 * Tue May 21 2019 Daniel P. Berrangé <berrange@redhat.com> - 5.1.0-6
 - Fix systemd socket permissions
 - Resolves: rhbz #1712498 (CVE-2019-10132)
