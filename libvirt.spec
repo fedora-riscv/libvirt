@@ -137,7 +137,7 @@
 
 %define with_firewalld 1
 
-%if 0%{?fedora} >= 30 || 0%{?rhel} > 7
+%if 0%{?fedora} >= 31 || 0%{?rhel} > 7
     %define with_firewalld_zone 0%{!?_without_firewalld_zone:1}
 %endif
 
@@ -1248,7 +1248,6 @@ rm -f po/stamp-po
            %{?enable_werror} \
            --enable-expensive-tests \
            --with-init-script=systemd \
-           --without-firewalld-zone \
            %{?arg_login_shell}
 make %{?_smp_mflags} V=1
 gzip -9 ChangeLog
