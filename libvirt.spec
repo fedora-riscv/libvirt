@@ -426,7 +426,7 @@ BuildRequires: rpcgen
 BuildRequires: libtirpc-devel
 %endif
 
-%if %{with_firewalld}
+%if %{with_firewalld_zone}
 BuildRequires: firewalld-filesystem
 %endif
 
@@ -1404,12 +1404,12 @@ fi
 rm -rf %{_localstatedir}/lib/rpm-state/libvirt || :
 
 %post daemon-driver-network
-%if %{with_firewalld}
+%if %{with_firewalld_zone}
     %firewalld_reload
 %endif
 
 %postun daemon-driver-network
-%if %{with_firewalld}
+%if %{with_firewalld_zone}
     %firewalld_reload
 %endif
 
