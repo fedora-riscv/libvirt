@@ -216,7 +216,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 5.1.0
-Release: 7%{?dist}
+Release: 8%{?dist}
 License: LGPLv2+
 URL: https://libvirt.org/
 
@@ -426,7 +426,7 @@ BuildRequires: rpcgen
 BuildRequires: libtirpc-devel
 %endif
 
-%if %{with_firewalld_zone}
+%if %{with_firewalld}
 BuildRequires: firewalld-filesystem
 %endif
 
@@ -1921,6 +1921,9 @@ exit 0
 
 
 %changelog
+* Fri May 31 2019 Adam Williamson <awilliam@redhat.com> - 5.1.0-8
+- Fix scriptlet error when built without firewalld zone support
+
 * Wed May 29 2019 Adam Williamson <awilliam@redhat.com> - 5.1.0-7
 - Pass --without-firewalld-zone to configure
 - Resolves: rhbz #1699051
