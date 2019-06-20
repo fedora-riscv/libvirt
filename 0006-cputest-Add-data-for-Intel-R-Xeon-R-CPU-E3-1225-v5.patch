@@ -1,7 +1,6 @@
-From b15a3c9f9bd24d12082b5a6ea505eb3ea48137cb Mon Sep 17 00:00:00 2001
 From: Jiri Denemark <jdenemar@redhat.com>
 Date: Fri, 5 Apr 2019 11:19:30 +0200
-Subject: [PATCH 3/4] cputest: Add data for Intel(R) Xeon(R) CPU E3-1225 v5
+Subject: [PATCH] cputest: Add data for Intel(R) Xeon(R) CPU E3-1225 v5
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -879,6 +878,3 @@ index 0000000000..437429d61d
 +  <cpuid eax_in='0x80860000' ecx_in='0x00' eax='0x00000ce4' ebx='0x00000e74' ecx='0x00000064' edx='0x00000000'/>
 +  <cpuid eax_in='0xc0000000' ecx_in='0x00' eax='0x00000ce4' ebx='0x00000e74' ecx='0x00000064' edx='0x00000000'/>
 +</cpudata>
--- 
-2.21.0
-

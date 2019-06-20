@@ -1,0 +1,75 @@
+From: Peter Krempa <pkrempa@redhat.com>
+Date: Mon, 24 Sep 2018 16:49:01 +0200
+Subject: [PATCH] Revert "qemu: hotplug: Prepare disk source in
+ qemuDomainAttachDeviceDiskLive"
+
+Preparing the storage source prior to assigning the alias will not work
+as the names of the certain objects depend on the alias for the legacy
+hotplug case as we generate the object names for the secrets based on
+the alias.
+
+This reverts commit 192fdaa614e3800255048a8a70c1292ccf18397a.
+
+Signed-off-by: Peter Krempa <pkrempa@redhat.com>
+(cherry picked from commit 9ac196997839a29486029a02d8f519df54ae0186)
+---
+ src/qemu/qemu_hotplug.c | 11 +++++------
+ 1 file changed, 5 insertions(+), 6 deletions(-)
+
+diff --git a/src/qemu/qemu_hotplug.c b/src/qemu/qemu_hotplug.c
+index 4f290b5648..421cc2c174 100644
+--- a/src/qemu/qemu_hotplug.c
++++ b/src/qemu/qemu_hotplug.c
+@@ -781,6 +781,7 @@ qemuDomainAttachDiskGeneric(virQEMUDriverPtr driver,
+     qemuDomainObjPrivatePtr priv = vm->privateData;
+     qemuHotplugDiskSourceDataPtr diskdata = NULL;
+     char *devstr = NULL;
++    virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
+ 
+     if (qemuHotplugPrepareDiskAccess(driver, vm, disk, NULL, false) < 0)
+         goto cleanup;
+@@ -788,6 +789,9 @@ qemuDomainAttachDiskGeneric(virQEMUDriverPtr driver,
+     if (qemuAssignDeviceDiskAlias(vm->def, disk, priv->qemuCaps) < 0)
+         goto error;
+ 
++    if (qemuDomainPrepareDiskSource(disk, priv, cfg) < 0)
++        goto error;
++
+     if (!(diskdata = qemuHotplugDiskSourceAttachPrepare(disk, priv->qemuCaps)))
+         goto error;
+ 
+@@ -822,6 +826,7 @@ qemuDomainAttachDiskGeneric(virQEMUDriverPtr driver,
+     qemuHotplugDiskSourceDataFree(diskdata);
+     qemuDomainSecretDiskDestroy(disk);
+     VIR_FREE(devstr);
++    virObjectUnref(cfg);
+     return ret;
+ 
+  exit_monitor:
+@@ -1062,8 +1067,6 @@ qemuDomainAttachDeviceDiskLive(virQEMUDriverPtr driver,
+                                bool forceMediaChange)
+ {
+     size_t i;
+-    virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
+-    qemuDomainObjPrivatePtr priv = vm->privateData;
+     virDomainDiskDefPtr disk = dev->data.disk;
+     virDomainDiskDefPtr orig_disk = NULL;
+     int ret = -1;
+@@ -1080,9 +1083,6 @@ qemuDomainAttachDeviceDiskLive(virQEMUDriverPtr driver,
+     if (qemuDomainDetermineDiskChain(driver, vm, disk, true) < 0)
+         goto cleanup;
+ 
+-    if (qemuDomainPrepareDiskSource(disk, priv, cfg) < 0)
+-        goto cleanup;
+-
+     switch ((virDomainDiskDevice) disk->device)  {
+     case VIR_DOMAIN_DISK_DEVICE_CDROM:
+     case VIR_DOMAIN_DISK_DEVICE_FLOPPY:
+@@ -1153,7 +1153,6 @@ qemuDomainAttachDeviceDiskLive(virQEMUDriverPtr driver,
+  cleanup:
+     if (ret != 0)
+         ignore_value(qemuRemoveSharedDevice(driver, dev, vm->def->name));
+-    virObjectUnref(cfg);
+     return ret;
+ }
+ 

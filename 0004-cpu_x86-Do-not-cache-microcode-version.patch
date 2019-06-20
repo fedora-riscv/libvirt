@@ -1,7 +1,6 @@
-From 33998cdd47300fc3ca6cb8f85714c149440b9c8b Mon Sep 17 00:00:00 2001
 From: Jiri Denemark <jdenemar@redhat.com>
 Date: Fri, 5 Apr 2019 11:33:32 +0200
-Subject: [PATCH 1/4] cpu_x86: Do not cache microcode version
+Subject: [PATCH] cpu_x86: Do not cache microcode version
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -50,6 +49,3 @@ index cb27550025..ce48ca6867 100644
  
   cleanup:
      virCPUx86DataFree(cpuData);
--- 
-2.21.0
-

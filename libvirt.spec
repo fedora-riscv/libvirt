@@ -224,7 +224,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 4.7.0
-Release: 4%{?dist}%{?extra_release}
+Release: 5%{?dist}%{?extra_release}
 License: LGPLv2+
 URL: https://libvirt.org/
 
@@ -249,6 +249,27 @@ Patch0007: 0007-cpu_map-Define-md-clear-CPUID-bit.patch
 Patch0008: 0008-admin-reject-clients-unless-their-UID-matches-the-cu.patch
 Patch0009: 0009-locking-restrict-sockets-to-mode-0600.patch
 Patch0010: 0010-logging-restrict-sockets-to-mode-0600.patch
+# CVE-2019-10161: arbitrary file read/exec via virDomainSaveImageGetXMLDesc
+# API (bz #1722463, bz #1720115)
+Patch0011: 0011-api-disallow-virDomainSaveImageGetXMLDesc-on-read-on.patch
+# CVE-2019-10166: virDomainManagedSaveDefineXML API exposed to readonly
+# clients (bz #1722462, bz #1720114)
+Patch0012: 0012-api-disallow-virDomainManagedSaveDefineXML-on-read-o.patch
+# CVE-2019-10167: arbitrary command execution via
+# virConnectGetDomainCapabilities API (bz #1722464, bz #1720117)
+Patch0013: 0013-api-disallow-virConnectGetDomainCapabilities-on-read.patch
+# CVE-2019-10168: arbitrary command execution via
+# virConnectBaselineHypervisorCPU and virConnectCompareHypervisorCPU APIs (bz
+# #1722466, bz #1720118)
+Patch0014: 0014-api-disallow-virConnect-HypervisorCPU-on-read-only-c.patch
+# CVE-2019-3886: virsh domhostname command discloses guest hostname in
+# readonly mode [fedora-rawhide
+Patch0015: 0015-api-disallow-virDomainGetHostname-for-read-only-conn.patch
+Patch0016: 0016-remote-enforce-ACL-write-permission-for-getting-gues.patch
+# Failed to attache NEW rbd device to guest (bz #1672620)
+Patch0017: 0017-Revert-qemu-hotplug-Prepare-disk-source-in-qemuDomai.patch
+# PCI hostdev interface segfault (bz #1692053)
+Patch0018: 0018-util-Fixing-invalid-error-checking-from-virPCIGetNet.patch
 
 
 Requires: libvirt-daemon = %{version}-%{release}
@@ -1951,6 +1972,21 @@ exit 0
 
 
 %changelog
+* Thu Jun 20 2019 Cole Robinson <crobinso@redhat.com> - 4.7.0-5
+- CVE-2019-10161: arbitrary file read/exec via virDomainSaveImageGetXMLDesc
+  API (bz #1722463, bz #1720115)
+- CVE-2019-10166: virDomainManagedSaveDefineXML API exposed to readonly
+  clients (bz #1722462, bz #1720114)
+- CVE-2019-10167: arbitrary command execution via
+  virConnectGetDomainCapabilities API (bz #1722464, bz #1720117)
+- CVE-2019-10168: arbitrary command execution via
+  virConnectBaselineHypervisorCPU and virConnectCompareHypervisorCPU APIs (bz
+  #1722466, bz #1720118)
+- CVE-2019-3886: virsh domhostname command discloses guest hostname in
+  readonly mode [fedora-rawhide
+- Failed to attache NEW rbd device to guest (bz #1672620)
+- PCI hostdev interface segfault (bz #1692053)
+
 * Tue May 21 2019 Daniel P. Berrangé <berrange@redhat.com> - 4.7.0-4
 - Fix systemd socket permissions
 - Resolves: rhbz #1712498 (CVE-2019-10132)
