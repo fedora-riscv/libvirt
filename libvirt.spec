@@ -270,6 +270,10 @@ Patch0016: 0016-remote-enforce-ACL-write-permission-for-getting-gues.patch
 Patch0017: 0017-Revert-qemu-hotplug-Prepare-disk-source-in-qemuDomai.patch
 # PCI hostdev interface segfault (bz #1692053)
 Patch0018: 0018-util-Fixing-invalid-error-checking-from-virPCIGetNet.patch
+# Fix the test suite
+Patch0019: 0019-tests-merge-code-for-UNIX-and-TCP-socket-testing.patch
+Patch0020: 0020-tests-rewrite-socket-to-do-something-sensible-and-re.patch
+Patch0021: 0021-test-Remove-possible-infinite-loop-in-virnetsockette.patch
 
 
 Requires: libvirt-daemon = %{version}-%{release}

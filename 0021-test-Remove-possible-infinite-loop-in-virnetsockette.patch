@@ -1,0 +1,34 @@
+From: John Ferlan <jferlan@redhat.com>
+Date: Fri, 7 Sep 2018 08:20:15 -0400
+Subject: [PATCH] test: Remove possible infinite loop in virnetsockettest
+
+Commit 39015a6f3 modified the test to be more reliable/realistic,
+but without checking the return status of virEventRunDefaultImpl
+it's possible that the test could run infinitely.
+
+Found by Coverity
+
+Signed-off-by: John Ferlan <jferlan@redhat.com>
+ACKed-by: Michal Privoznik <mprivozn@redhat.com>
+(cherry picked from commit a0ba31c0069e89f178f064e724ddbc8540b64d32)
+---
+ tests/virnetsockettest.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/tests/virnetsockettest.c b/tests/virnetsockettest.c
+index cccb90d0be..5927be1f80 100644
+--- a/tests/virnetsockettest.c
++++ b/tests/virnetsockettest.c
+@@ -243,8 +243,10 @@ testSocketAccept(const void *opaque)
+                         &cdata) < 0)
+         goto cleanup;
+ 
+-    while (rsock == NULL)
+-        virEventRunDefaultImpl();
++    while (rsock == NULL) {
++        if (virEventRunDefaultImpl() < 0)
++            break;
++    }
+ 
+     for (i = 0; i < nlsock; i++) {
+         if (lsock[i] == rsock) {
