@@ -1,7 +1,6 @@
-From 2686c9e10d118539e45ee8ecd15cd5262dd7d61b Mon Sep 17 00:00:00 2001
 From: Jiri Denemark <jdenemar@redhat.com>
 Date: Tue, 9 Apr 2019 12:35:52 +0200
-Subject: [PATCH 4/4] cpu_map: Define md-clear CPUID bit
+Subject: [PATCH] cpu_map: Define md-clear CPUID bit
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -93,6 +92,3 @@ index 1f321db273..a5591278df 100644
    <feature policy='require' name='stibp'/>
    <feature policy='require' name='ssbd'/>
    <feature policy='require' name='pdpe1gb'/>
--- 
-2.21.0
-

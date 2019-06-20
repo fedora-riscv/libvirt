@@ -216,7 +216,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 5.1.0
-Release: 8%{?dist}
+Release: 9%{?dist}
 License: LGPLv2+
 URL: https://libvirt.org/
 
@@ -250,6 +250,28 @@ Patch0014: 0014-cpu_map-Define-md-clear-CPUID-bit.patch
 Patch0015: 0015-admin-reject-clients-unless-their-UID-matches-the-cu.patch
 Patch0016: 0016-locking-restrict-sockets-to-mode-0600.patch
 Patch0017: 0017-logging-restrict-sockets-to-mode-0600.patch
+# CVE-2019-10161: arbitrary file read/exec via virDomainSaveImageGetXMLDesc
+# API (bz #1722463, bz #1720115)
+Patch0018: 0018-api-disallow-virDomainSaveImageGetXMLDesc-on-read-on.patch
+# CVE-2019-10166: virDomainManagedSaveDefineXML API exposed to readonly
+# clients (bz #1722462, bz #1720114)
+Patch0019: 0019-api-disallow-virDomainManagedSaveDefineXML-on-read-o.patch
+# CVE-2019-10167: arbitrary command execution via
+# virConnectGetDomainCapabilities API (bz #1722464, bz #1720117)
+Patch0020: 0020-api-disallow-virConnectGetDomainCapabilities-on-read.patch
+# CVE-2019-10168: arbitrary command execution via
+# virConnectBaselineHypervisorCPU and virConnectCompareHypervisorCPU APIs (bz
+# #1722466, bz #1720118)
+Patch0021: 0021-api-disallow-virConnect-HypervisorCPU-on-read-only-c.patch
+# CVE-2019-3886: virsh domhostname command discloses guest hostname in
+# readonly mode [fedora-rawhide
+Patch0022: 0022-api-disallow-virDomainGetHostname-for-read-only-conn.patch
+Patch0023: 0023-remote-enforce-ACL-write-permission-for-getting-gues.patch
+# Cannot start VM with a CBR 2.0 TPM device (bz #1712556)
+Patch0024: 0024-qemu-Set-up-EMULATOR-thread-and-cpuset.mems-before-e.patch
+# libvirtd does not update VM .xml configurations after virsh
+# snapshot/blockcommit (bz #1722348)
+Patch0025: 0025-qemu-blockjob-Fix-saving-of-inactive-XML-after-compl.patch
 
 
 Requires: libvirt-daemon = %{version}-%{release}
@@ -1921,6 +1943,22 @@ exit 0
 
 
 %changelog
+* Thu Jun 20 2019 Cole Robinson <crobinso@redhat.com> - 5.1.0-9
+- CVE-2019-10161: arbitrary file read/exec via virDomainSaveImageGetXMLDesc
+  API (bz #1722463, bz #1720115)
+- CVE-2019-10166: virDomainManagedSaveDefineXML API exposed to readonly
+  clients (bz #1722462, bz #1720114)
+- CVE-2019-10167: arbitrary command execution via
+  virConnectGetDomainCapabilities API (bz #1722464, bz #1720117)
+- CVE-2019-10168: arbitrary command execution via
+  virConnectBaselineHypervisorCPU and virConnectCompareHypervisorCPU APIs (bz
+  #1722466, bz #1720118)
+- CVE-2019-3886: virsh domhostname command discloses guest hostname in
+  readonly mode [fedora-rawhide
+- Cannot start VM with a CBR 2.0 TPM device (bz #1712556)
+- libvirtd does not update VM .xml configurations after virsh
+  snapshot/blockcommit (bz #1722348)
+
 * Fri May 31 2019 Adam Williamson <awilliam@redhat.com> - 5.1.0-8
 - Fix scriptlet error when built without firewalld zone support
 

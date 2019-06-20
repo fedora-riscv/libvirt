@@ -1,7 +1,6 @@
-From b735dde844d7f78856f5b3ca79d546f4cd916e55 Mon Sep 17 00:00:00 2001
 From: Jiri Denemark <jdenemar@redhat.com>
 Date: Fri, 12 Apr 2019 21:21:05 +0200
-Subject: [PATCH 2/4] qemu: Don't cache microcode version
+Subject: [PATCH] qemu: Don't cache microcode version
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -142,6 +141,3 @@ index 1736bad032..e30c0599ad 100644
      if (!driver->qemuCapsCache)
          goto error;
  
--- 
-2.21.0
-
