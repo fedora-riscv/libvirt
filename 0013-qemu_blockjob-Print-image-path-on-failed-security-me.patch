@@ -1,0 +1,42 @@
+From: Michal Privoznik <mprivozn@redhat.com>
+Date: Mon, 2 Sep 2019 13:25:21 +0200
+Subject: [PATCH] qemu_blockjob: Print image path on failed security metadata
+ move too
+
+When a block job is completed, the security image metadata are
+moved to the new image. If this fails an warning is printed, but
+the message contains only domain name and lacks image paths. Put
+them both into the warning message.
+
+Signed-off-by: Michal Privoznik <mprivozn@redhat.com>
+ACKed-by: Peter Krempa <pkrempa@redhat.com>
+(cherry picked from commit 7f99d8a739c01a280ca0c173ecd6051a92f0c897)
+
+Resolves: https://bugzilla.redhat.com/show_bug.cgi?id=1741456
+
+Signed-off-by: Michal Privoznik <mprivozn@redhat.com>
+---
+ src/qemu/qemu_blockjob.c | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
+
+diff --git a/src/qemu/qemu_blockjob.c b/src/qemu/qemu_blockjob.c
+index a5b558b9ab..b3c0f784cd 100644
+--- a/src/qemu/qemu_blockjob.c
++++ b/src/qemu/qemu_blockjob.c
+@@ -584,8 +584,14 @@ qemuBlockJobEventProcessLegacyCompleted(virQEMUDriverPtr driver,
+         virDomainLockImageDetach(driver->lockManager, vm, disk->src);
+ 
+         /* Move secret driver metadata */
+-        if (qemuSecurityMoveImageMetadata(driver, vm, disk->src, disk->mirror) < 0)
+-            VIR_WARN("Unable to move disk metadata on vm %s", vm->def->name);
++        if (qemuSecurityMoveImageMetadata(driver, vm, disk->src, disk->mirror) < 0) {
++            VIR_WARN("Unable to move disk metadata on "
++                     "vm %s from %s to %s (disk target %s)",
++                     vm->def->name,
++                     NULLSTR(disk->src->path),
++                     NULLSTR(disk->mirror->path),
++                     disk->dst);
++        }
+ 
+         virObjectUnref(disk->src);
+         disk->src = disk->mirror;

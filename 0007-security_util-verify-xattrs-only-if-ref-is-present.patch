@@ -1,0 +1,96 @@
+From: Nikolay Shirokovskiy <nshirokovskiy@virtuozzo.com>
+Date: Mon, 2 Sep 2019 13:25:15 +0200
+Subject: [PATCH] security_util: verify xattrs only if ref is present
+
+After 7cfb7aab573 commit starting a domain pullutes logs with
+warnings like [1]. The reason is resource files do not
+have timestamp before starting a domain and after destroying
+domain the timestamp is cleared. Let's check the timestamp
+only if attribute with refcounter is found.
+
+[1] warning : virSecurityValidateTimestamp:198 : Invalid XATTR timestamp detected on \
+    /some/path secdriver=dac
+
+Signed-off-by: Nikolay Shirokovskiy <nshirokovskiy@virtuozzo.com>
+Signed-off-by: Michal Privoznik <mprivozn@redhat.com>
+Reviewed-by: Michal Privoznik <mprivozn@redhat.com>
+(cherry picked from commit 7c40211a5a0fd15f5885e38dc571e81b9a3fd699)
+
+Resolves: https://bugzilla.redhat.com/show_bug.cgi?id=1741140
+
+Signed-off-by: Michal Privoznik <mprivozn@redhat.com>
+---
+ src/security/security_util.c | 36 ++++++++++++++++++++++++++++--------
+ 1 file changed, 28 insertions(+), 8 deletions(-)
+
+diff --git a/src/security/security_util.c b/src/security/security_util.c
+index 31f41cedfd..865b3ec905 100644
+--- a/src/security/security_util.c
++++ b/src/security/security_util.c
+@@ -269,13 +269,9 @@ virSecurityGetRememberedLabel(const char *name,
+     VIR_AUTOFREE(char *) attr_name = NULL;
+     VIR_AUTOFREE(char *) value = NULL;
+     unsigned int refcount = 0;
+-    int rc;
+ 
+     *label = NULL;
+ 
+-    if ((rc = virSecurityValidateTimestamp(name, path)) < 0)
+-        return rc;
+-
+     if (!(ref_name = virSecurityGetRefCountAttrName(name)))
+         return -1;
+ 
+@@ -290,6 +286,20 @@ virSecurityGetRememberedLabel(const char *name,
+         return -1;
+     }
+ 
++    if (value) {
++        int rc;
++
++        /* Do this after we've tried to get refcounter to ensure underlying FS
++         * supports XATTRs and @path has refcounter attribute set, because
++         * validator might throws a warning. */
++        if ((rc = virSecurityValidateTimestamp(name, path)) < 0)
++            return rc;
++
++        /* Invalid label is like a non-existent one */
++        if (rc == 1)
++            return -2;
++    }
++
+     if (virStrToLong_ui(value, NULL, 10, &refcount) < 0) {
+         virReportError(VIR_ERR_INTERNAL_ERROR,
+                        _("malformed refcount %s on %s"),
+@@ -357,10 +367,6 @@ virSecuritySetRememberedLabel(const char *name,
+     VIR_AUTOFREE(char *) attr_name = NULL;
+     VIR_AUTOFREE(char *) value = NULL;
+     unsigned int refcount = 0;
+-    int rc;
+-
+-    if ((rc = virSecurityValidateTimestamp(name, path)) < 0)
+-        return rc;
+ 
+     if (!(ref_name = virSecurityGetRefCountAttrName(name)))
+         return -1;
+@@ -377,6 +383,20 @@ virSecuritySetRememberedLabel(const char *name,
+         }
+     }
+ 
++    if (value) {
++        int rc;
++
++        /* Do this after we've tried to get refcounter to ensure underlying FS
++         * supports XATTRs and @path has refcounter attribute set, because
++         * validator might throws a warning. */
++        if ((rc = virSecurityValidateTimestamp(name, path)) < 0)
++            return rc;
++
++        /* Invalid label is like a non-existent one */
++        if (rc == 1)
++            VIR_FREE(value);
++    }
++
+     if (value &&
+         virStrToLong_ui(value, NULL, 10, &refcount) < 0) {
+         virReportError(VIR_ERR_INTERNAL_ERROR,

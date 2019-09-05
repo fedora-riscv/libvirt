@@ -1,0 +1,53 @@
+From: Laine Stump <laine@redhat.com>
+Date: Thu, 15 Aug 2019 16:34:21 -0400
+Subject: [PATCH] access: fix incorrect addition to virAccessPermNetwork
+
+Commit e69444e17 (first appeared in libvirt-5.5.0) added the new value
+"VIR_ACCESS_PERM_NETWORK_SEARCH_PORTS" to the virAccessPerNetwork
+enum, and also the string "search_ports" to the VIR_ENUM_IMPL() macro
+for that enum. Unfortunately, the enum value was added in the middle
+of the list, while the string was added to the end of the
+VIR_ENUM_IMPL().
+
+This patch corrects that error by moving the new value to the end of
+the enum definition, so that the order matches that of the string
+list.
+
+Resolves: https://bugzilla.redhat.com/1741428
+
+Signed-off-by: Laine Stump <laine@redhat.com>
+Reviewed-by: Michal Privoznik <mprivozn@redhat.com>
+(cherry picked from commit 8d6eaf5e099dab8400aa76bcc9a0ac74ff6f46e1)
+---
+ src/access/viraccessperm.h | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/src/access/viraccessperm.h b/src/access/viraccessperm.h
+index a42512d5e0..7480ee8c2f 100644
+--- a/src/access/viraccessperm.h
++++ b/src/access/viraccessperm.h
+@@ -410,18 +410,18 @@ typedef enum {
+      */
+     VIR_ACCESS_PERM_NETWORK_START,
+ 
+-    /**
+-     * @desc: List network ports
+-     * @message: Listing network ports requires authorization
+-     */
+-    VIR_ACCESS_PERM_NETWORK_SEARCH_PORTS,
+-
+     /**
+      * @desc: Stop network
+      * @message: Stopping network requires authorization
+      */
+     VIR_ACCESS_PERM_NETWORK_STOP,
+ 
++    /**
++     * @desc: List network ports
++     * @message: Listing network ports requires authorization
++     */
++    VIR_ACCESS_PERM_NETWORK_SEARCH_PORTS,
++
+     VIR_ACCESS_PERM_NETWORK_LAST
+ } virAccessPermNetwork;
+ 

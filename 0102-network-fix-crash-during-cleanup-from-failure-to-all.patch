@@ -1,0 +1,59 @@
+From: Laine Stump <laine@redhat.com>
+Date: Thu, 15 Aug 2019 21:52:28 -0400
+Subject: [PATCH] network: fix crash during cleanup from failure to allocate
+ port
+
+During networkPortCreateXML, if networkAllocatePort() failed,
+networkReleasePort() would be called, which would (in the case of
+network pools of macvtap passthrough devices) attempt to find the
+allocated device by comparing port->plug.direct.linkdev to each device
+in the pool. Since port->plug.direct.linkdev was still NULL, the
+attempted strcmp would result in a SEGV.
+
+Calling networkReleasePort() during error cleanup is something that
+should only be done if networkAllocatePort() has already succeeded. It
+turns out there is one other possible error exit from
+networkPortCreateXML() that happens after networkAllocatePort() has
+succeeded, so the code to call networkReleasePort() was just moved
+down to there.
+
+Resolves: https://bugzilla.redhat.com/1741390
+
+Signed-off-by: Laine Stump <laine@redhat.com>
+Reviewed-by: Michal Privoznik <mprivozn@redhat.com>
+(cherry picked from commit dac697e8d7d6d9a607e61caeeec06b259edf513f)
+---
+ src/network/bridge_driver.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/src/network/bridge_driver.c b/src/network/bridge_driver.c
+index 41fa89a4af..bc0f781c56 100644
+--- a/src/network/bridge_driver.c
++++ b/src/network/bridge_driver.c
+@@ -5592,20 +5592,20 @@ networkPortCreateXML(virNetworkPtr net,
+         rc = networkNotifyPort(obj, portdef);
+     else
+         rc = networkAllocatePort(obj, portdef);
+-    if (rc < 0) {
++    if (rc < 0)
++        goto cleanup;
++
++    if (virNetworkObjAddPort(obj, portdef, driver->stateDir) < 0) {
+         virErrorPtr saved;
++
+         saved = virSaveLastError();
+         ignore_value(networkReleasePort(obj, portdef));
++        virNetworkPortDefFree(portdef);
+         virSetError(saved);
+         virFreeError(saved);
+         goto cleanup;
+     }
+ 
+-    if (virNetworkObjAddPort(obj, portdef, driver->stateDir) < 0) {
+-        virNetworkPortDefFree(portdef);
+-        goto cleanup;
+-    }
+-
+     ret = virGetNetworkPort(net, portdef->uuid);
+  cleanup:
+     virNetworkObjEndAPI(&obj);

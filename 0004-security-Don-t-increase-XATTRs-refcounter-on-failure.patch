@@ -1,0 +1,164 @@
+From: Michal Privoznik <mprivozn@redhat.com>
+Date: Mon, 2 Sep 2019 13:25:12 +0200
+Subject: [PATCH] security: Don't increase XATTRs refcounter on failure
+
+If user has two domains, each have the same disk (configured for
+RW) but each runs with different seclabel then we deny start of
+the second domain because in order to do that we would need to
+relabel the disk but that would cut the first domain off. Even if
+we did not do that, qemu would fail to start because it would be
+unable to lock the disk image for the second time. So far, this
+behaviour is expected. But what is not expected is that we
+increase the refcounter in XATTRs and leave it like that.
+
+What happens is that when the second domain starts,
+virSecuritySetRememberedLabel() is called, and since there are
+XATTRs from the first domain it increments the refcounter and
+returns it (refcounter == 2 at this point). Then callers
+(virSecurityDACSetOwnership() and
+virSecuritySELinuxSetFileconHelper()) realize that refcounter is
+greater than 1 and desired seclabel doesn't match the one the
+disk image already has and an error is produced. But the
+refcounter is never decremented.
+
+Resolves: https://bugzilla.redhat.com/show_bug.cgi?id=1740024
+
+Signed-off-by: Michal Privoznik <mprivozn@redhat.com>
+Reviewed-by: Martin Kletzander <mkletzan@redhat.com>
+(cherry picked from commit 6a2806fd549c0bfdcb3eb83f130ee99ea8d213e1)
+Signed-off-by: Michal Privoznik <mprivozn@redhat.com>
+---
+ src/security/security_dac.c     | 41 ++++++++++++++++++---------------
+ src/security/security_selinux.c | 18 ++++++++++-----
+ 2 files changed, 34 insertions(+), 25 deletions(-)
+
+diff --git a/src/security/security_dac.c b/src/security/security_dac.c
+index 137daf5d28..4b4afef18a 100644
+--- a/src/security/security_dac.c
++++ b/src/security/security_dac.c
+@@ -751,6 +751,7 @@ virSecurityDACSetOwnership(virSecurityManagerPtr mgr,
+                            bool remember)
+ {
+     virSecurityDACDataPtr priv = virSecurityManagerGetPrivateData(mgr);
++    virErrorPtr origerr;
+     struct stat sb;
+     int refcount;
+     int rc;
+@@ -784,12 +785,13 @@ virSecurityDACSetOwnership(virSecurityManagerPtr mgr,
+              * is @refcount domains using the @path. Do not
+              * change the label (as it would almost certainly
+              * cause the other domains to lose access to the
+-             * @path). */
++             * @path). However, the refcounter was incremented in
++             * XATTRs so decrease it. */
+             if (sb.st_uid != uid || sb.st_gid != gid) {
+                 virReportError(VIR_ERR_OPERATION_INVALID,
+                                _("Setting different DAC user or group on %s "
+                                  "which is already in use"), path);
+-                return -1;
++                goto error;
+             }
+         }
+     }
+@@ -797,25 +799,26 @@ virSecurityDACSetOwnership(virSecurityManagerPtr mgr,
+     VIR_INFO("Setting DAC user and group on '%s' to '%ld:%ld'",
+              NULLSTR(src ? src->path : path), (long)uid, (long)gid);
+ 
+-    if (virSecurityDACSetOwnershipInternal(priv, src, path, uid, gid) < 0) {
+-        virErrorPtr origerr;
+-
+-        virErrorPreserveLast(&origerr);
+-        /* Try to restore the label. This is done so that XATTRs
+-         * are left in the same state as when the control entered
+-         * this function. However, if our attempt fails, there's
+-         * not much we can do. XATTRs refcounting is fubar'ed and
+-         * the only option we have is warn users. */
+-        if (virSecurityDACRestoreFileLabelInternal(mgr, src, path, remember) < 0)
+-            VIR_WARN("Unable to restore label on '%s'. "
+-                     "XATTRs might have been left in inconsistent state.",
+-                     NULLSTR(src ? src->path : path));
+-
+-        virErrorRestore(&origerr);
+-        return -1;
+-    }
++    if (virSecurityDACSetOwnershipInternal(priv, src, path, uid, gid) < 0)
++        goto error;
+ 
+     return 0;
++
++ error:
++    virErrorPreserveLast(&origerr);
++    /* Try to restore the label. This is done so that XATTRs
++     * are left in the same state as when the control entered
++     * this function. However, if our attempt fails, there's
++     * not much we can do. XATTRs refcounting is fubar'ed and
++     * the only option we have is warn users. */
++    if (virSecurityDACRestoreFileLabelInternal(mgr, src, path, remember) < 0)
++        VIR_WARN("Unable to restore label on '%s'. "
++                 "XATTRs might have been left in inconsistent state.",
++                 NULLSTR(src ? src->path : path));
++
++    virErrorRestore(&origerr);
++
++    return -1;
+ }
+ 
+ 
+diff --git a/src/security/security_selinux.c b/src/security/security_selinux.c
+index ea20373a90..9857223bbf 100644
+--- a/src/security/security_selinux.c
++++ b/src/security/security_selinux.c
+@@ -1334,6 +1334,7 @@ virSecuritySELinuxSetFileconHelper(virSecurityManagerPtr mgr,
+     security_context_t econ = NULL;
+     int refcount;
+     int rc;
++    bool rollback = false;
+     int ret = -1;
+ 
+     if ((rc = virSecuritySELinuxTransactionAppend(path, tcon,
+@@ -1353,6 +1354,8 @@ virSecuritySELinuxSetFileconHelper(virSecurityManagerPtr mgr,
+ 
+         if (econ) {
+             refcount = virSecuritySELinuxRememberLabel(path, econ);
++            if (refcount > 0)
++                rollback = true;
+             if (refcount == -2) {
+                 /* Not supported. Don't error though. */
+             } else if (refcount < 0) {
+@@ -1362,7 +1365,8 @@ virSecuritySELinuxSetFileconHelper(virSecurityManagerPtr mgr,
+                  * is @refcount domains using the @path. Do not
+                  * change the label (as it would almost certainly
+                  * cause the other domains to lose access to the
+-                 * @path). */
++                 * @path). However, the refcounter was
++                 * incremented in XATTRs so decrease it. */
+                 if (STRNEQ(econ, tcon)) {
+                     virReportError(VIR_ERR_OPERATION_INVALID,
+                                    _("Setting different SELinux label on %s "
+@@ -1373,7 +1377,12 @@ virSecuritySELinuxSetFileconHelper(virSecurityManagerPtr mgr,
+         }
+     }
+ 
+-    if (virSecuritySELinuxSetFileconImpl(path, tcon, optional, privileged) < 0) {
++    if (virSecuritySELinuxSetFileconImpl(path, tcon, optional, privileged) < 0)
++        goto cleanup;
++
++    ret = 0;
++ cleanup:
++    if (ret < 0 && rollback) {
+         virErrorPtr origerr;
+ 
+         virErrorPreserveLast(&origerr);
+@@ -1388,11 +1397,8 @@ virSecuritySELinuxSetFileconHelper(virSecurityManagerPtr mgr,
+                      path);
+ 
+         virErrorRestore(&origerr);
+-        goto cleanup;
+-    }
+ 
+-    ret = 0;
+- cleanup:
++    }
+     freecon(econ);
+     return ret;
+ }

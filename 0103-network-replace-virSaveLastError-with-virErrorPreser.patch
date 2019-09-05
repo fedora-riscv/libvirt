@@ -1,0 +1,57 @@
+From: Laine Stump <laine@redhat.com>
+Date: Thu, 15 Aug 2019 22:28:27 -0400
+Subject: [PATCH] network: replace virSaveLastError() with
+ virErrorPreserveLast()
+
+virErrorPreserveLast()/virErrorRestore() (added in commit 8333e7455
+back in 2017), do a better better job of saving and restoring the last
+libvirt error than virSaveLastError()/virErrorRestore() (they're
+simpler, and they also save/restore the system errno).
+
+Signed-off-by: Laine Stump <laine@redhat.com>
+Reviewed-by: Michal Privoznik <mprivozn@redhat.com>
+(cherry picked from commit 39de732aa728ae9b8a9414ad08b8d0ee7ed02732)
+---
+ src/network/bridge_driver.c | 17 ++++++++---------
+ 1 file changed, 8 insertions(+), 9 deletions(-)
+
+diff --git a/src/network/bridge_driver.c b/src/network/bridge_driver.c
+index bc0f781c56..c7e5151d09 100644
+--- a/src/network/bridge_driver.c
++++ b/src/network/bridge_driver.c
+@@ -2987,13 +2987,12 @@ networkStartNetwork(virNetworkDriverStatePtr driver,
+ 
+  cleanup:
+     if (ret < 0) {
++        virErrorPtr save_err;
++
++        virErrorPreserveLast(&save_err);
+         virNetworkObjUnsetDefTransient(obj);
+-        virErrorPtr save_err = virSaveLastError();
+-        int save_errno = errno;
+         networkShutdownNetwork(driver, obj);
+-        virSetError(save_err);
+-        virFreeError(save_err);
+-        errno = save_errno;
++        virErrorRestore(&save_err);
+     }
+     return ret;
+ }
+@@ -5596,13 +5595,13 @@ networkPortCreateXML(virNetworkPtr net,
+         goto cleanup;
+ 
+     if (virNetworkObjAddPort(obj, portdef, driver->stateDir) < 0) {
+-        virErrorPtr saved;
++        virErrorPtr save_err;
+ 
+-        saved = virSaveLastError();
++        virErrorPreserveLast(&save_err);
+         ignore_value(networkReleasePort(obj, portdef));
+         virNetworkPortDefFree(portdef);
+-        virSetError(saved);
+-        virFreeError(saved);
++        virErrorRestore(&save_err);
++
+         goto cleanup;
+     }
+ 

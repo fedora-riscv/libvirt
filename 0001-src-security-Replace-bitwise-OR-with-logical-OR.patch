@@ -1,0 +1,31 @@
+From: Erik Skultety <eskultet@redhat.com>
+Date: Mon, 2 Sep 2019 13:25:09 +0200
+Subject: [PATCH] src: security: Replace bitwise OR with logical OR
+
+Typo introduced by commit d73f3f58360.
+
+https://bugzilla.redhat.com/show_bug.cgi?id=1738483
+
+Signed-off-by: Erik Skultety <eskultet@redhat.com>
+(cherry picked from commit 5801ef06ec29fdbac6718e455015450f7c243c1b)
+
+Resolves: https://bugzilla.redhat.com/show_bug.cgi?id=1740024
+
+Signed-off-by: Michal Privoznik <mprivozn@redhat.com>
+---
+ src/security/security_util.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/security/security_util.c b/src/security/security_util.c
+index ad265b0bc5..9d3f483f6b 100644
+--- a/src/security/security_util.c
++++ b/src/security/security_util.c
+@@ -268,7 +268,7 @@ virSecurityMoveRememberedLabel(const char *name,
+     VIR_AUTOFREE(char *) attr_name = NULL;
+     VIR_AUTOFREE(char *) attr_value = NULL;
+ 
+-    if (!(ref_name = virSecurityGetRefCountAttrName(name)) |
++    if (!(ref_name = virSecurityGetRefCountAttrName(name)) ||
+         !(attr_name = virSecurityGetAttrName(name)))
+         return -1;
+ 

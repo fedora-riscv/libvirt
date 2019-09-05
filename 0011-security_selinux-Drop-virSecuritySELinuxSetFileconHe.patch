@@ -1,0 +1,83 @@
+From: Michal Privoznik <mprivozn@redhat.com>
+Date: Mon, 2 Sep 2019 13:25:19 +0200
+Subject: [PATCH] security_selinux: Drop virSecuritySELinuxSetFileconHelper
+
+This function is no longer needed because after previous commits
+it's just an alias to virSecuritySELinuxSetFilecon.
+
+Signed-off-by: Michal Privoznik <mprivozn@redhat.com>
+Reviewed-by: Martin Kletzander <mkletzan@redhat.com>
+(cherry picked from commit eaa2a064fa9a7cf6220349ac8706a22593cbf607)
+
+Resolves: https://bugzilla.redhat.com/show_bug.cgi?id=1740506
+
+Signed-off-by: Michal Privoznik <mprivozn@redhat.com>
+---
+ src/security/security_selinux.c | 33 ++++++++++++---------------------
+ 1 file changed, 12 insertions(+), 21 deletions(-)
+
+diff --git a/src/security/security_selinux.c b/src/security/security_selinux.c
+index e5b55fccb4..1df04d7358 100644
+--- a/src/security/security_selinux.c
++++ b/src/security/security_selinux.c
+@@ -226,10 +226,10 @@ virSecuritySELinuxRecallLabel(const char *path,
+ }
+ 
+ 
+-static int virSecuritySELinuxSetFileconHelper(virSecurityManagerPtr mgr,
+-                                              const char *path,
+-                                              const char *tcon,
+-                                              bool remember);
++static int virSecuritySELinuxSetFilecon(virSecurityManagerPtr mgr,
++                                        const char *path,
++                                        const char *tcon,
++                                        bool remember);
+ 
+ 
+ static int virSecuritySELinuxRestoreFileLabel(virSecurityManagerPtr mgr,
+@@ -281,10 +281,10 @@ virSecuritySELinuxTransactionRun(pid_t pid ATTRIBUTE_UNUSED,
+         const bool remember = item->remember && list->lock;
+ 
+         if (!item->restore) {
+-            rv = virSecuritySELinuxSetFileconHelper(list->manager,
+-                                                    item->path,
+-                                                    item->tcon,
+-                                                    remember);
++            rv = virSecuritySELinuxSetFilecon(list->manager,
++                                              item->path,
++                                              item->tcon,
++                                              remember);
+         } else {
+             rv = virSecuritySELinuxRestoreFileLabel(list->manager,
+                                                     item->path,
+@@ -1332,10 +1332,10 @@ virSecuritySELinuxSetFileconImpl(const char *path,
+ 
+ 
+ static int
+-virSecuritySELinuxSetFileconHelper(virSecurityManagerPtr mgr,
+-                                   const char *path,
+-                                   const char *tcon,
+-                                   bool remember)
++virSecuritySELinuxSetFilecon(virSecurityManagerPtr mgr,
++                             const char *path,
++                             const char *tcon,
++                             bool remember)
+ {
+     bool privileged = virSecurityManagerGetPrivileged(mgr);
+     security_context_t econ = NULL;
+@@ -1411,15 +1411,6 @@ virSecuritySELinuxSetFileconHelper(virSecurityManagerPtr mgr,
+ }
+ 
+ 
+-static int
+-virSecuritySELinuxSetFilecon(virSecurityManagerPtr mgr,
+-                             const char *path,
+-                             const char *tcon,
+-                             bool remember)
+-{
+-    return virSecuritySELinuxSetFileconHelper(mgr, path, tcon, remember);
+-}
+-
+ static int
+ virSecuritySELinuxFSetFilecon(int fd, char *tcon)
+ {

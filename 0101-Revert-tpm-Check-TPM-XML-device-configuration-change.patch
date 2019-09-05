@@ -1,0 +1,192 @@
+From: =?UTF-8?q?J=C3=A1n=20Tomko?= <jtomko@redhat.com>
+Date: Fri, 9 Aug 2019 10:48:35 +0200
+Subject: [PATCH] Revert "tpm: Check TPM XML device configuration changes after
+ edit"
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Redefining a domain via virDomainDefineXML should not give different results
+based on an already existing definition.
+
+Also, there's a crasher somewhere in the code:
+https://bugzilla.redhat.com/show_bug.cgi?id=1739338
+
+This reverts commit 94b3aa55f83ada33a9fdda66068d58ef1a56c0a5
+
+Signed-off-by: Ján Tomko <jtomko@redhat.com>
+Reviewed-by: Jiri Denemark <jdenemar@redhat.com>
+(cherry picked from commit d8326cb8826170019c74018511d76c58665ab282)
+---
+ src/conf/domain_conf.c    | 56 ---------------------------------------
+ src/conf/domain_conf.h    |  3 ---
+ src/libvirt_private.syms  |  1 -
+ src/qemu/qemu_driver.c    | 28 --------------------
+ src/qemu/qemu_extdevice.c |  2 +-
+ src/qemu/qemu_extdevice.h |  3 ---
+ 6 files changed, 1 insertion(+), 92 deletions(-)
+
+diff --git a/src/conf/domain_conf.c b/src/conf/domain_conf.c
+index 441eb1a5a2..ac0561ddc5 100644
+--- a/src/conf/domain_conf.c
++++ b/src/conf/domain_conf.c
+@@ -31436,59 +31436,3 @@ virDomainGraphicsNeedsAutoRenderNode(const virDomainGraphicsDef *graphics)
+ 
+     return true;
+ }
+-
+-
+-static int
+-virDomainCheckTPMChanges(virDomainDefPtr def,
+-                         virDomainDefPtr newDef)
+-{
+-    bool oldEnc, newEnc;
+-
+-    if (!def->tpm)
+-        return 0;
+-
+-    switch (def->tpm->type) {
+-    case VIR_DOMAIN_TPM_TYPE_EMULATOR:
+-        if (virFileExists(def->tpm->data.emulator.storagepath)) {
+-            /* VM has been started */
+-            /* Once a VM was started with an encrypted state we allow
+-             * less configuration changes.
+-             */
+-            oldEnc = def->tpm->data.emulator.hassecretuuid;
+-            if (oldEnc && def->tpm->type != newDef->tpm->type) {
+-                virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+-                               _("Changing the type of TPM is not allowed"));
+-                return -1;
+-            }
+-            if (oldEnc && !newDef->tpm) {
+-                virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+-                               _("Removing an encrypted TPM is not allowed"));
+-                return -1;
+-            }
+-            newEnc = newDef->tpm->data.emulator.hassecretuuid;
+-            if (oldEnc != newEnc) {
+-                virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+-                   _("TPM state encryption cannot be changed "
+-                     "once VM was started"));
+-                return -1;
+-            }
+-        }
+-        break;
+-    case VIR_DOMAIN_TPM_TYPE_PASSTHROUGH:
+-    case VIR_DOMAIN_TPM_TYPE_LAST:
+-        break;
+-    }
+-
+-    return 0;
+-}
+-
+-
+-int
+-virDomainCheckDeviceChanges(virDomainDefPtr def,
+-                            virDomainDefPtr newDef)
+-{
+-    if (!def || !newDef)
+-        return 0;
+-
+-    return virDomainCheckTPMChanges(def, newDef);
+-}
+diff --git a/src/conf/domain_conf.h b/src/conf/domain_conf.h
+index 8a4425df64..d5190a20db 100644
+--- a/src/conf/domain_conf.h
++++ b/src/conf/domain_conf.h
+@@ -3638,6 +3638,3 @@ virDomainGraphicsGetRenderNode(const virDomainGraphicsDef *graphics);
+ 
+ bool
+ virDomainGraphicsNeedsAutoRenderNode(const virDomainGraphicsDef *graphics);
+-
+-int
+-virDomainCheckDeviceChanges(virDomainDefPtr def, virDomainDefPtr newDef);
+diff --git a/src/libvirt_private.syms b/src/libvirt_private.syms
+index 9fd778272f..bbc5144aa2 100644
+--- a/src/libvirt_private.syms
++++ b/src/libvirt_private.syms
+@@ -216,7 +216,6 @@ virDomainBootTypeFromString;
+ virDomainBootTypeToString;
+ virDomainCapabilitiesPolicyTypeToString;
+ virDomainCapsFeatureTypeToString;
+-virDomainCheckDeviceChanges;
+ virDomainChrConsoleTargetTypeFromString;
+ virDomainChrConsoleTargetTypeToString;
+ virDomainChrDefForeach;
+diff --git a/src/qemu/qemu_driver.c b/src/qemu/qemu_driver.c
+index 4ca3eb7bde..1ba6def419 100644
+--- a/src/qemu/qemu_driver.c
++++ b/src/qemu/qemu_driver.c
+@@ -53,7 +53,6 @@
+ #include "qemu_migration_params.h"
+ #include "qemu_blockjob.h"
+ #include "qemu_security.h"
+-#include "qemu_extdevice.h"
+ 
+ #include "virerror.h"
+ #include "virlog.h"
+@@ -7760,30 +7759,6 @@ qemuDomainCreate(virDomainPtr dom)
+     return qemuDomainCreateWithFlags(dom, 0);
+ }
+ 
+-static int
+-qemuDomainCheckDeviceChanges(virQEMUDriverPtr driver,
+-                             virDomainDefPtr def)
+-{
+-    virDomainObjPtr vm;
+-    int ret;
+-
+-    vm = virDomainObjListFindByUUID(driver->domains, def->uuid);
+-    if (!vm)
+-        return 0;
+-
+-    if (qemuExtDevicesInitPaths(driver, vm->def) < 0) {
+-        ret = -1;
+-        goto cleanup;
+-    }
+-
+-    ret = virDomainCheckDeviceChanges(vm->def, def);
+-
+- cleanup:
+-    virDomainObjEndAPI(&vm);
+-
+-    return ret;
+-}
+-
+ static virDomainPtr
+ qemuDomainDefineXMLFlags(virConnectPtr conn,
+                          const char *xml,
+@@ -7820,9 +7795,6 @@ qemuDomainDefineXMLFlags(virConnectPtr conn,
+     if (virDomainDefineXMLFlagsEnsureACL(conn, def) < 0)
+         goto cleanup;
+ 
+-    if (qemuDomainCheckDeviceChanges(driver, def) < 0)
+-        goto cleanup;
+-
+     if (!(vm = virDomainObjListAdd(driver->domains, def,
+                                    driver->xmlopt,
+                                    0, &oldDef)))
+diff --git a/src/qemu/qemu_extdevice.c b/src/qemu/qemu_extdevice.c
+index af52466421..dc032aa60c 100644
+--- a/src/qemu/qemu_extdevice.c
++++ b/src/qemu/qemu_extdevice.c
+@@ -79,7 +79,7 @@ qemuExtDeviceLogCommand(qemuDomainLogContextPtr logCtxt,
+  * stored and we can remove directories and files in case of domain XML
+  * changes.
+  */
+-int
++static int
+ qemuExtDevicesInitPaths(virQEMUDriverPtr driver,
+                         virDomainDefPtr def)
+ {
+diff --git a/src/qemu/qemu_extdevice.h b/src/qemu/qemu_extdevice.h
+index 5a53c79f38..039b3e60dd 100644
+--- a/src/qemu/qemu_extdevice.h
++++ b/src/qemu/qemu_extdevice.h
+@@ -54,6 +54,3 @@ bool qemuExtDevicesHasDevice(virDomainDefPtr def);
+ int qemuExtDevicesSetupCgroup(virQEMUDriverPtr driver,
+                               virDomainDefPtr def,
+                               virCgroupPtr cgroup);
+-
+-int qemuExtDevicesInitPaths(virQEMUDriverPtr driver,
+-                            virDomainDefPtr def);
