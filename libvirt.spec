@@ -16,6 +16,8 @@
 # (or provide a command-line override) if they backport any patches that
 # touch configure.ac or Makefile.am.
 %{!?enable_autotools:%global enable_autotools 0}
+# fedora31: Some patches require this
+%global enable_autotools 1
 
 # The hypervisor drivers that run in libvirtd
 %define with_qemu          0%{!?_without_qemu:1}
@@ -216,7 +218,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 5.6.0
-Release: 1%{?dist}
+Release: 2%{?dist}
 License: LGPLv2+
 URL: https://libvirt.org/
 
@@ -224,6 +226,29 @@ URL: https://libvirt.org/
     %define mainturl stable_updates/
 %endif
 Source: https://libvirt.org/sources/%{?mainturl}libvirt-%{version}.tar.xz
+
+# Fix issues with qemu.conf remember_owner (bz #1748079)
+Patch0001: 0001-src-security-Replace-bitwise-OR-with-logical-OR.patch
+Patch0002: 0002-security_util-Use-more-VIR_AUTOFREE.patch
+Patch0003: 0003-security_util-Document-virSecurityMoveRememberedLabe.patch
+Patch0004: 0004-security-Don-t-increase-XATTRs-refcounter-on-failure.patch
+Patch0005: 0005-util-Introduce-virhostuptime.patch
+Patch0006: 0006-security_util-Remove-stale-XATTRs.patch
+Patch0007: 0007-security_util-verify-xattrs-only-if-ref-is-present.patch
+Patch0008: 0008-virSecuritySELinuxSetFileconImpl-Drop-optional-argum.patch
+Patch0009: 0009-security_selinux-Drop-virSecuritySELinuxSetFileconOp.patch
+Patch0010: 0010-security_selinux-Drop-optional-from-_virSecuritySELi.patch
+Patch0011: 0011-security_selinux-Drop-virSecuritySELinuxSetFileconHe.patch
+Patch0012: 0012-security_selinux-Play-nicely-with-network-FS-that-on.patch
+Patch0013: 0013-qemu_blockjob-Print-image-path-on-failed-security-me.patch
+Patch0014: 0014-qemu_blockjob-Remove-secdriver-metadata-more-frequen.patch
+
+# Misc upstream bugfixes
+Patch0101: 0101-Revert-tpm-Check-TPM-XML-device-configuration-change.patch
+Patch0102: 0102-network-fix-crash-during-cleanup-from-failure-to-all.patch
+Patch0103: 0103-network-replace-virSaveLastError-with-virErrorPreser.patch
+Patch0104: 0104-access-fix-incorrect-addition-to-virAccessPermNetwor.patch
+Patch0105: 0105-network-fix-ability-to-use-openvswitch-with-vlans.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-config-network = %{version}-%{release}
@@ -1888,6 +1913,10 @@ exit 0
 
 
 %changelog
+* Thu Sep 05 2019 Cole Robinson <crobinso@redhat.com> - 5.6.0-2
+- Fix issues with qemu.conf remember_owner (bz #1748079)
+- Misc upstream bugfixes
+
 * Tue Aug 06 2019 Cole Robinson <crobinso@redhat.com> - 5.6.0-1
 - Update to version 5.6.0
 
