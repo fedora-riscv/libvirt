@@ -1,0 +1,127 @@
+From: Laine Stump <laine@redhat.com>
+Date: Sun, 11 Aug 2019 16:21:42 -0400
+Subject: [PATCH] util: allow tap-based guest interfaces to have MAC address
+ prefix 0xFE
+
+Back in July 2010, commit 6ea90b84 (meant to resolve
+https://bugzilla.redhat.com/571991 ) added code to set the MAC address
+of any tap device to the associated guest interface's MAC, but with
+the first byte replaced with 0xFE. This was done in order to assure
+that
+
+1) the tap MAC and guest interface MAC were different (otherwise L2
+   forwarding through the tap would not work, and the kernel would
+   repeatedly issue a warning stating as much).
+
+2) any bridge device that had one of these taps attached would *not*
+   take on the MAC of the tap (leading to network instability as
+   guests started and stopped)
+
+A couple years later, https://bugzilla.redhat.com/798467 was filed,
+complaining that a user could configure a tap-based guest interface to
+have a MAC address that itself had a first byte of 0xFE, silently
+(other than the kernel warning messages) resulting in a non-working
+configuration. This was fixed by commit 5d571045, which logged an
+error and failed the guest start / interface attach if the MAC's first
+byte was 0xFE.
+
+Although this restriction only reduces the potential pool of MAC
+addresses from 2^46 (last two bits of byte 1 must be set to 10) by
+2^32 (still 4 orders of magnitude larger than the entire IPv4 address
+space), it also means that management software that autogenerates MAC
+addresses must have special code to avoid an 0xFE prefix. Now after 7
+years, someone has noticed this restriction and requested that we
+remove it.
+
+So instead of failing when 0xFE is found as the first byte, this patch
+removes the restriction by just replacing the first byte in the tap
+device MAC with 0xFA if the first byte in the guest interface is
+0xFE. 0xFA is the next-highest value that still has 10 as the lowest
+two bits, and still
+
+2) meets the requirement of "tap MAC must be different from guest
+   interface MAC", and
+
+3) is high enough that there should never be an issue of the attached
+   bridge device taking on the MAC of the tap.
+
+The result is that *any* MAC can be chosen by management software
+(although it would still not work correctly if a multicast MAC (lowest
+bit of first byte set to 1) was chosen), but that's a different
+issue).
+
+Signed-off-by: Laine Stump <laine@redhat.com>
+Reviewed-by: Michal Privoznik <mprivozn@redhat.com
+(cherry picked from commit a60ee914009aa7f1a27fc0563337ded08b09247f)
+---
+ src/qemu/qemu_interface.c | 11 ++++++++++-
+ src/util/virnetdevtap.c   | 26 ++++++++++++--------------
+ 2 files changed, 22 insertions(+), 15 deletions(-)
+
+diff --git a/src/qemu/qemu_interface.c b/src/qemu/qemu_interface.c
+index c8effa68f4..72ed51cb1f 100644
+--- a/src/qemu/qemu_interface.c
++++ b/src/qemu/qemu_interface.c
+@@ -444,8 +444,17 @@ qemuInterfaceEthernetConnect(virDomainDefPtr def,
+     }
+ 
+     virDomainAuditNetDevice(def, net, tunpath, true);
++
++    /* The tap device's MAC address cannot match the MAC address
++     * used by the guest. This results in "received packet on
++     * vnetX with own address as source address" error logs from
++     * the kernel.
++     */
+     virMacAddrSet(&tapmac, &net->mac);
+-    tapmac.addr[0] = 0xFE;
++    if (tapmac.addr[0] == 0xFE)
++        tapmac.addr[0] = 0xFA;
++    else
++        tapmac.addr[0] = 0xFE;
+ 
+     if (virNetDevSetMAC(net->ifname, &tapmac) < 0)
+         goto cleanup;
+diff --git a/src/util/virnetdevtap.c b/src/util/virnetdevtap.c
+index b65c26bee1..4548b51b5b 100644
+--- a/src/util/virnetdevtap.c
++++ b/src/util/virnetdevtap.c
+@@ -668,7 +668,6 @@ int virNetDevTapCreateInBridgePort(const char *brname,
+                                    unsigned int flags)
+ {
+     virMacAddr tapmac;
+-    char macaddrstr[VIR_MAC_STRING_BUFLEN];
+     size_t i;
+ 
+     if (virNetDevTapCreate(ifname, tunpath, tapfd, tapfdSize, flags) < 0)
+@@ -682,19 +681,18 @@ int virNetDevTapCreateInBridgePort(const char *brname,
+      */
+     virMacAddrSet(&tapmac, macaddr);
+     if (!(flags & VIR_NETDEV_TAP_CREATE_USE_MAC_FOR_BRIDGE)) {
+-        if (macaddr->addr[0] == 0xFE) {
+-            /* For normal use, the tap device's MAC address cannot
+-             * match the MAC address used by the guest. This results
+-             * in "received packet on vnetX with own address as source
+-             * address" error logs from the kernel.
+-             */
+-            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+-                           _("Unable to use MAC address starting with "
+-                             "reserved value 0xFE - '%s' - "),
+-                           virMacAddrFormat(macaddr, macaddrstr));
+-            goto error;
+-        }
+-        tapmac.addr[0] = 0xFE; /* Discourage bridge from using TAP dev MAC */
++        /* The tap device's MAC address cannot match the MAC address
++         * used by the guest. This results in "received packet on
++         * vnetX with own address as source address" error logs from
++         * the kernel. Making the tap address as high as possible
++         * discourages the bridge from using this tap's MAC as its own
++         * (a Linux host bridge will take on the lowest numbered MAC
++         * of all devices attached to it).
++         */
++        if (tapmac.addr[0] == 0xFE)
++            tapmac.addr[0] = 0xFA;
++        else
++            tapmac.addr[0] = 0xFE;
+     }
+ 
+     if (virNetDevSetMAC(*ifname, &tapmac) < 0)

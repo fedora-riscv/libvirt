@@ -218,7 +218,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 5.6.0
-Release: 2%{?dist}
+Release: 3%{?dist}
 License: LGPLv2+
 URL: https://libvirt.org/
 
@@ -249,6 +249,17 @@ Patch0102: 0102-network-fix-crash-during-cleanup-from-failure-to-all.patch
 Patch0103: 0103-network-replace-virSaveLastError-with-virErrorPreser.patch
 Patch0104: 0104-access-fix-incorrect-addition-to-virAccessPermNetwor.patch
 Patch0105: 0105-network-fix-ability-to-use-openvswitch-with-vlans.patch
+# allow tap-based guest interfaces to have MAC address prefix 0xFE (bz
+# #1743349)
+Patch0106: 0106-util-allow-tap-based-guest-interfaces-to-have-MAC-ad.patch
+# systemd socket fixes
+Patch0107: 0107-remote-use-Wants-instead-of-Requires-for-libvirtd-so.patch
+Patch0108: 0108-remote-move-timeout-arg-into-sysconf-file.patch
+Patch0109: 0109-remote-forbid-the-listen-arg-when-systemd-socket-act.patch
+Patch0110: 0110-rpm-don-t-enable-socket-activation-in-upgrade-if-lis.patch
+Patch0111: 0111-remote-fix-registration-of-TLS-socket.patch
+# vircgroupv2: fix setting cpu.max period (bz #1749227)
+Patch0112: 0112-vircgroupv2-fix-setting-cpu.max-period.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-config-network = %{version}-%{release}
@@ -1913,6 +1924,12 @@ exit 0
 
 
 %changelog
+* Tue Sep 17 2019 Cole Robinson <crobinso@redhat.com> - 5.6.0-3
+- allow tap-based guest interfaces to have MAC address prefix 0xFE (bz
+  #1743349)
+- systemd socket fixes
+- vircgroupv2: fix setting cpu.max period (bz #1749227)
+
 * Thu Sep 05 2019 Cole Robinson <crobinso@redhat.com> - 5.6.0-2
 - Fix issues with qemu.conf remember_owner (bz #1748079)
 - Misc upstream bugfixes

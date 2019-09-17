@@ -1,0 +1,34 @@
+From: Pavel Hrdina <phrdina@redhat.com>
+Date: Thu, 5 Sep 2019 11:22:11 +0200
+Subject: [PATCH] vircgroupv2: fix setting cpu.max period
+
+When we set cpu.max period we need to parse the cpu.max file first as
+it contains both quota and period values separated by space.  When only
+a single number is written to that file it will set quota.  However,
+in order to change period we need to write both values.
+
+The code was prepared for that but mistakenly used new line to end the
+string with the first value.
+
+Resolves: https://bugzilla.redhat.com/show_bug.cgi?id=1749227
+
+Signed-off-by: Pavel Hrdina <phrdina@redhat.com>
+Reviewed-by: Erik Skultety <eskultet@redhat.com>
+(cherry picked from commit 0bd4ad193d8ba7f0104f4739f19f2731e7cf9f56)
+---
+ src/util/vircgroupv2.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/util/vircgroupv2.c b/src/util/vircgroupv2.c
+index e36c36685b..d8abe18943 100644
+--- a/src/util/vircgroupv2.c
++++ b/src/util/vircgroupv2.c
+@@ -1507,7 +1507,7 @@ virCgroupV2SetCpuCfsPeriod(virCgroupPtr group,
+                        _("Invalid 'cpu.max' data."));
+         return -1;
+     }
+-    *tmp = '\n';
++    *tmp = '\0';
+ 
+     if (virAsprintf(&value, "%s %llu", str, cfs_period) < 0)
+         return -1;
