@@ -218,7 +218,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 5.6.0
-Release: 3%{?dist}
+Release: 4%{?dist}
 License: LGPLv2+
 URL: https://libvirt.org/
 
@@ -260,6 +260,9 @@ Patch0110: 0110-rpm-don-t-enable-socket-activation-in-upgrade-if-lis.patch
 Patch0111: 0111-remote-fix-registration-of-TLS-socket.patch
 # vircgroupv2: fix setting cpu.max period (bz #1749227)
 Patch0112: 0112-vircgroupv2-fix-setting-cpu.max-period.patch
+# Fix VM startup when legacy cgroups are defined (bz #1612383)
+Patch0113: 0113-vircgroupv2-Fix-VM-startup-when-legacy-cgroups-are-d.patch
+Patch0114: 0114-vircgroup-Add-some-VIR_DEBUG-statements.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-config-network = %{version}-%{release}
@@ -1924,6 +1927,9 @@ exit 0
 
 
 %changelog
+* Thu Sep 26 2019 Cole Robinson <crobinso@redhat.com> - 5.6.0-4
+- Fix VM startup when legacy cgroups are defined (bz #1612383)
+
 * Tue Sep 17 2019 Cole Robinson <crobinso@redhat.com> - 5.6.0-3
 - allow tap-based guest interfaces to have MAC address prefix 0xFE (bz
   #1743349)
