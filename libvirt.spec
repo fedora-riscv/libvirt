@@ -118,14 +118,13 @@
 %endif
 
 # RHEL doesn't ship OpenVZ, VBox, PowerHypervisor,
-# VMware, libxenserver (xenapi), libxenlight (Xen 4.1 and newer),
+# VMware, libxenlight (Xen 4.1 and newer),
 # or HyperV.
 %if 0%{?rhel}
     %define with_openvz 0
     %define with_vbox 0
     %define with_phyp 0
     %define with_vmware 0
-    %define with_xenapi 0
     %define with_libxl 0
     %define with_hyperv 0
     %define with_vz 0
@@ -215,8 +214,8 @@
 
 Summary: Library providing a simple virtualization API
 Name: libvirt
-Version: 5.7.0
-Release: 3%{?dist}
+Version: 5.8.0
+Release: 1%{?dist}
 License: LGPLv2+
 URL: https://libvirt.org/
 
@@ -224,12 +223,6 @@ URL: https://libvirt.org/
     %define mainturl stable_updates/
 %endif
 Source: https://libvirt.org/sources/%{?mainturl}libvirt-%{version}.tar.xz
-
-# Fix systemd socket activation with TLS socket
-Patch0001: 0001-remote-fix-registration-of-TLS-socket.patch
-# Fix VM startup when legacy cgroups are defined (bz #1612383)
-Patch0002: 0002-vircgroupv2-Fix-VM-startup-when-legacy-cgroups-are-d.patch
-Patch0003: 0003-vircgroup-Add-some-VIR_DEBUG-statements.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-config-network = %{version}-%{release}
@@ -1142,10 +1135,17 @@ exit 1
     # Nightly edk2.git-arm
     LOADERS="$LOADERS:/usr/share/edk2.git/arm/QEMU_EFI-pflash.raw:/usr/share/edk2.git/arm/vars-template-pflash.raw"
 
-    # Fedora edk2-ovmf
+    # Fedora edk2-ovmf, x86_64
     LOADERS="$LOADERS:/usr/share/edk2/ovmf/OVMF_CODE.fd:/usr/share/edk2/ovmf/OVMF_VARS.fd"
+    # Fedora edk2-ovmf, x86_64, with Secure Boot
+    LOADERS="$LOADERS:/usr/share/edk2/ovmf/OVMF_CODE.secboot.fd:/usr/share/edk2/ovmf/OVMF_VARS.secboot.fd"
     # Fedora edk2-ovmf-ia32
     LOADERS="$LOADERS:/usr/share/edk2/ovmf-ia32/OVMF_CODE.fd:/usr/share/edk2/ovmf-ia32/OVMF_VARS.fd"
+    # Fedora edk2-ovmf-ia32, with Secure Boot.  (NB: Unlike x86_64, for
+    # 'ia32', there is no secboot-variant "VARS" file (NVRAM template).
+    # So the NVRAM template for 'ovmf-ia32/OVMF_CODE.secboot.fd' is the
+    # same as the one for the non-secboot variant.)
+    LOADERS="$LOADERS:/usr/share/edk2/ovmf-ia32/OVMF_CODE.secboot.fd:/usr/share/edk2/ovmf-ia32/OVMF_VARS.fd"
     # Fedora edk2-aarch64
     LOADERS="$LOADERS:/usr/share/edk2/aarch64/QEMU_EFI-pflash.raw:/usr/share/edk2/aarch64/vars-template-pflash.raw"
     # Fedora edk2-arm
@@ -1175,7 +1175,6 @@ rm -f po/stamp-po
            %{?arg_esx} \
            %{?arg_hyperv} \
            %{?arg_vmware} \
-           --without-xenapi \
            --without-vz \
            --without-bhyve \
            --with-remote-default-mode=legacy \
@@ -1226,7 +1225,6 @@ rm -f po/stamp-po
            --with-init-script=systemd \
            %{?arg_login_shell}
 make %{?_smp_mflags} V=1
-gzip -9 ChangeLog
 
 %install
 rm -fr %{buildroot}
@@ -1314,15 +1312,6 @@ mv $RPM_BUILD_ROOT%{_datadir}/systemtap/tapset/libvirt_qemu_probes.stp \
 %endif
 
 %check
-cd tests
-# These tests don't current work in a mock build root
-for i in nodeinfotest seclabeltest
-do
-  rm -f $i
-  printf 'int main(void) { return 0; }' > $i.c
-  printf '#!/bin/sh\nexit 0\n' > $i
-  chmod +x $i
-done
 if ! make %{?_smp_mflags} check VIR_TEST_DEBUG=1
 then
   cat test-suite.log || true
@@ -1533,16 +1522,8 @@ exit 0
 %files
 
 %files docs
-%doc AUTHORS ChangeLog.gz NEWS README README.md
+%doc AUTHORS ChangeLog NEWS README README.md
 %doc libvirt-docs/*
-
-# API docs
-%dir %{_datadir}/gtk-doc/html/libvirt/
-%doc %{_datadir}/gtk-doc/html/libvirt/*.devhelp
-%doc %{_datadir}/gtk-doc/html/libvirt/*.html
-%doc %{_datadir}/gtk-doc/html/libvirt/*.png
-%doc %{_datadir}/gtk-doc/html/libvirt/*.css
-
 
 %files daemon
 
@@ -2006,6 +1987,9 @@ exit 0
 
 
 %changelog
+* Mon Oct 07 2019 Cole Robinson <crobinso@redhat.com> - 5.8.0-1
+- Update to version 5.8.0
+
 * Thu Sep 26 2019 Cole Robinson <crobinso@redhat.com> - 5.7.0-3
 - Fix VM startup when legacy cgroups are defined (bz #1612383)
 
