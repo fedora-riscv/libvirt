@@ -218,7 +218,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 5.6.0
-Release: 4%{?dist}
+Release: 5%{?dist}
 License: LGPLv2+
 URL: https://libvirt.org/
 
@@ -263,6 +263,14 @@ Patch0112: 0112-vircgroupv2-fix-setting-cpu.max-period.patch
 # Fix VM startup when legacy cgroups are defined (bz #1612383)
 Patch0113: 0113-vircgroupv2-Fix-VM-startup-when-legacy-cgroups-are-d.patch
 Patch0114: 0114-vircgroup-Add-some-VIR_DEBUG-statements.patch
+# Don't re-autostart objects when using socket activation (bz #1759613)
+Patch0115: 0115-qemu_driver-Fix-comment-of-qemuStateCleanup.patch
+Patch0116: 0116-driver-Introduce-virDriverShouldAutostart.patch
+Patch0117: 0117-lib-autostart-objects-exactly-once.patch
+Patch0118: 0118-Revert-src-Document-autostart-for-session-demon.patch
+# set bridge device MAC address explicitly (bz #1760851)
+Patch0119: 0119-util-allow-sending-mac-addr-to-virNetNewLink-without.patch
+Patch0120: 0120-util-set-bridge-device-MAC-address-explicitly-during.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-config-network = %{version}-%{release}
@@ -1927,6 +1935,10 @@ exit 0
 
 
 %changelog
+* Mon Nov 11 2019 Cole Robinson <crobinso@redhat.com> - 5.6.0-5
+- Don't re-autostart objects when using socket activation (bz #1759613)
+- set bridge device MAC address explicitly (bz #1760851)
+
 * Thu Sep 26 2019 Cole Robinson <crobinso@redhat.com> - 5.6.0-4
 - Fix VM startup when legacy cgroups are defined (bz #1612383)
 

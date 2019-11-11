@@ -1,0 +1,30 @@
+From: Michal Privoznik <mprivozn@redhat.com>
+Date: Fri, 4 Oct 2019 16:33:37 +0200
+Subject: [PATCH] qemu_driver: Fix comment of qemuStateCleanup()
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The comment says that the function kills domains and networks.
+This is obviously not the case.
+
+Signed-off-by: Michal Privoznik <mprivozn@redhat.com>
+Reviewed-by: Daniel P. Berrangé <berrange@redhat.com>
+(cherry picked from commit e0b90162c94c45a9b0cf197e45b71f26036725d8)
+---
+ src/qemu/qemu_driver.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/qemu/qemu_driver.c b/src/qemu/qemu_driver.c
+index 1ba6def419..69416d6d1a 100644
+--- a/src/qemu/qemu_driver.c
++++ b/src/qemu/qemu_driver.c
+@@ -1190,7 +1190,7 @@ qemuStateStop(void)
+ /**
+  * qemuStateCleanup:
+  *
+- * Shutdown the QEMU daemon, it will stop all active domains and networks
++ * Release resources allocated by QEMU driver (no domain is shut off though)
+  */
+ static int
+ qemuStateCleanup(void)

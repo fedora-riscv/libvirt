@@ -1,0 +1,39 @@
+From: Laine Stump <laine@laine.org>
+Date: Wed, 16 Oct 2019 14:06:54 -0400
+Subject: [PATCH] util: allow sending mac addr to virNetNewLink without ifindex
+
+Although until now, any use of the extra_args argument (a pointer to a
+struct containing extra attributes to add the the RTM_NEWLINK message)
+would always have the ifindex and mac set, so the code could assume it
+was safe to add both to the message if extra_args != NULL. There is
+now a use for setting a MAC address in the RTM_NEWLINK without setting
+the ifindex, so we should check each of these separately.
+
+Signed-off-by: Laine Stump <laine@redhat.com>
+Reviewed-by: Jiri Denemark <jdenemar@redhat.com>
+(cherry picked from commit b596d6c106cd87d6d452c5dd4ad923a034544fbf)
+---
+ src/util/virnetlink.c | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/src/util/virnetlink.c b/src/util/virnetlink.c
+index 7b3c6bf05f..394495ee2b 100644
+--- a/src/util/virnetlink.c
++++ b/src/util/virnetlink.c
+@@ -548,9 +548,14 @@ virNetlinkNewLink(const char *ifname,
+     NETLINK_MSG_NEST_END(nl_msg, linkinfo);
+ 
+     if (extra_args) {
+-        NETLINK_MSG_PUT(nl_msg, IFLA_LINK,
++        if (extra_args->ifindex) {
++            NETLINK_MSG_PUT(nl_msg, IFLA_LINK,
+                         sizeof(uint32_t), extra_args->ifindex);
+-        NETLINK_MSG_PUT(nl_msg, IFLA_ADDRESS, VIR_MAC_BUFLEN, extra_args->mac);
++        }
++        if (extra_args->mac) {
++            NETLINK_MSG_PUT(nl_msg, IFLA_ADDRESS,
++                            VIR_MAC_BUFLEN, extra_args->mac);
++        }
+     }
+ 
+     if (virNetlinkCommand(nl_msg, &resp, &buflen, 0, 0, NETLINK_ROUTE, 0) < 0)

@@ -1,0 +1,123 @@
+From: Michal Privoznik <mprivozn@redhat.com>
+Date: Fri, 4 Oct 2019 16:57:04 +0200
+Subject: [PATCH] driver: Introduce virDriverShouldAutostart()
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Some of objects we manage can be autostarted on libvirtd startup
+(e.g. domains, network, storage pools). The idea was that when
+the host is started up these objects are started too without need
+of user intervention. However, with the latest daemon split and
+switch to socket activated, short lived daemons (we put --timeout
+120 onto each daemon's command line) this doesn't do what we want
+it to. The problem is not new though, we already had the session
+daemon come and go and we circumvented this problem by
+documenting it (see v4.10.0-92-g61b4e8aaf1). But now that we meet
+the same problem at all fronts it's time to deal with it.
+
+The solution implemented in this commit is to have a file (one
+per each driver) that:
+
+  1) if doesn't exist, is created and autostart is allowed for
+     given driver,
+
+  2) if it does exist, then autostart is suppressed for given
+     driver.
+
+All the files live in a location that doesn't survive host
+reboots (/var/run/ for instance) and thus the file is
+automatically not there on fresh host boot.
+
+Signed-off-by: Michal Privoznik <mprivozn@redhat.com>
+Reviewed-by: Daniel P. Berrangé <berrange@redhat.com>
+(cherry picked from commit ee16a195d97315ba3610b3640d347d3f4a358b55)
+---
+ src/driver.c             | 39 +++++++++++++++++++++++++++++++++++++++
+ src/driver.h             |  3 +++
+ src/libvirt_private.syms |  1 +
+ 3 files changed, 43 insertions(+)
+
+diff --git a/src/driver.c b/src/driver.c
+index 5e8f68f6df..471053686f 100644
+--- a/src/driver.c
++++ b/src/driver.c
+@@ -29,6 +29,7 @@
+ #include "virfile.h"
+ #include "virlog.h"
+ #include "virmodule.h"
++#include "virstring.h"
+ #include "virthread.h"
+ #include "configmake.h"
+ 
+@@ -69,6 +70,44 @@ virDriverLoadModule(const char *name,
+ 
+ /* XXX unload modules, but we can't until we can unregister libvirt drivers */
+ 
++/**
++ * virDriverShouldAutostart:
++ * @dir: driver's run state directory (usually /var/run/libvirt/$driver)
++ * @autostart: whether driver should initiate autostart
++ *
++ * Automatic starting of libvirt's objects (e.g. domains, networks, storage
++ * pools, etc.) doesn't play nice with using '--timeout' on daemon's command
++ * line because the objects are attempted to autostart on every start of
++ * corresponding driver/daemon. To resolve this problem, a file is created in
++ * driver's private directory (which doesn't survive host's reboot) and thus
++ * autostart is attempted only once.
++ */
++int
++virDriverShouldAutostart(const char *dir,
++                         bool *autostart)
++{
++    VIR_AUTOFREE(char *) path = NULL;
++
++    *autostart = false;
++
++    if (virAsprintf(&path, "%s/autostarted", dir) < 0)
++        return -1;
++
++    if (virFileExists(path)) {
++        VIR_DEBUG("Autostart file %s exists, skipping autostart", path);
++        return 0;
++    }
++
++    VIR_DEBUG("Autostart file %s does not exist, do autostart", path);
++    *autostart = true;
++
++    if (virFileTouch(path, 0600) < 0)
++        return -1;
++
++    return 0;
++}
++
++
+ virThreadLocal connectInterface;
+ virThreadLocal connectNetwork;
+ virThreadLocal connectNWFilter;
+diff --git a/src/driver.h b/src/driver.h
+index 898fb96df4..c52284498e 100644
+--- a/src/driver.h
++++ b/src/driver.h
+@@ -112,6 +112,9 @@ int virDriverLoadModule(const char *name,
+                         const char *regfunc,
+                         bool required);
+ 
++int virDriverShouldAutostart(const char *name,
++                             bool *autostart);
++
+ virConnectPtr virGetConnectInterface(void);
+ virConnectPtr virGetConnectNetwork(void);
+ virConnectPtr virGetConnectNWFilter(void);
+diff --git a/src/libvirt_private.syms b/src/libvirt_private.syms
+index bbc5144aa2..c1c3974133 100644
+--- a/src/libvirt_private.syms
++++ b/src/libvirt_private.syms
+@@ -1337,6 +1337,7 @@ virStreamClass;
+ 
+ 
+ # driver.h
++virDriverShouldAutostart;
+ virGetConnectInterface;
+ virGetConnectNetwork;
+ virGetConnectNodeDev;

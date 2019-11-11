@@ -1,0 +1,213 @@
+From: Laine Stump <laine@laine.org>
+Date: Thu, 17 Oct 2019 21:12:30 -0400
+Subject: [PATCH] util: set bridge device MAC address explicitly during
+ virNetDevBridgeCreate
+
+When libvirt first implemented a stable and configurable MAC address
+for the bridges created for libvirt virtual networks (commit
+5754dbd56d, in libvirt v0.8.8) most distro stable releases didn't
+support explicitly setting the MAC address of a bridge; the bridge
+just always assumed the lowest numbered MAC of all attached
+interfaces. Because of this, we stabilized the bridge MAC address by
+creating a "dummy" tap interface with a MAC address guaranteed to be
+lower than any of the guest tap devices' MACs (which all started with
+0xFE, so it's not difficult to do) and attached it to the bridge -
+this was the inception of the "virbr0-nic" device that has confused so
+many people over the years.
+
+Even though the linux kernel had recently gained support for
+explicitly setting a bridge MAC, we deemed it unnecessary to set the
+MAC that way, because the other (indirect) method worked everywhere.
+
+But recently there have been reports that the bridge MAC address was
+not following the setting in the network config, and mismatched the
+MAC of the dummy tap device (which was still correct). It turns out
+that this is due to a change in systemd-242 that persists whatever MAC
+address is set for a bridge when it's initially started. According to
+the systemd NEWS file entry for version 242
+(https://github.com/systemd/systemd/blob/master/NEWS):
+
+  "if a bridge interface is created without any slaves, and gains
+   a slave later, then now the bridge does not inherit slave's MAC."
+
+This change was the result of:
+
+  https://github.com/systemd/systemd/issues/3374
+
+(apparently if there is no MAC saved for a bridge by the name of a
+bridge being created, the random MAC generated during creation is
+saved, and then that same MAC is used to explicitly set the MAC each
+time it is created). Once a bridge has an explicitly set MAC, the "use
+the lowest numbered MAC of attached devices" rule is ignored, so our
+dummy tap device is like the goggles - it does nothing! (well, almost).
+
+We could whine about changes in default behavior, etc. etc., but
+because the change was in response to actual user problems, that seems
+likely a fruitless task. Fortunately, time has marched on, and even
+distro releases that are old enough that they are no longer supported
+by upstream libvirt (e.g. RHEL6) have support for explicitly setting a
+bridge device MAC address, either during creation or with a separate
+ioctl after creation, so we can now do that.
+
+To enable explicitly setting the mac during bridge creation, we add a
+mac arg to virNetDevBridgeCreate().  In the case of platforms where
+the bridge is created with a netlink RTM_NEWLINK message, we just add
+that mac to the message. For platforms that still use an ioctl (either
+SIOCBRADDBR or SIOCIFCREATE2), we make a separate call to
+virNetDevSetMAC() after creating the bridge.
+
+(NB: I was unable to test the calling of virNetDevSetMAC() from the
+SIOCIFCREATE2 (BSD) version of virNetDevBridgeCreate(); even though I
+managed to get a FreeBSD system setup and libvirt built there, when I
+tried to start the default network the SIOCIFCREATE2 ioctl itself
+failed, so it never even got to the virNetDevSetMAC(). That leaves the
+FreeBSD implementation untested.)
+
+This makes the dummy tap pointless for purposes of setting the MAC
+address, but it is still useful for IPv6 DAD initialization (which
+apparently requires at least one interface to be attached to the
+bridge and online), as well as for setting an initial MTU for the
+bridge, so it hasn't been removed.
+
+(NB: we can safely *always* call virNetDevBridgeCreate() with
+&def->mac from the network driver because, in spite of the existence
+of a "mac_specified" bool in the config suggesting that it may not
+always be present, in reality a mac address will always be added to
+any network that doesn't have one - this is guaranteed in all cases by
+commit a47ae7c004)
+
+https://bugzilla.redhat.com/show_bug.cgi?id=1760851
+Signed-off-by: Laine Stump <laine@redhat.com>
+Reviewed-by: Jiri Denemark <jdenemar@redhat.com>
+(cherry picked from commit 13ec827052fcd79a4350f499aab5f4aa20ea83fa)
+---
+ src/network/bridge_driver.c |  2 +-
+ src/util/virnetdevbridge.c  | 44 ++++++++++++++++++++++++++++++-------
+ src/util/virnetdevbridge.h  |  3 ++-
+ 3 files changed, 39 insertions(+), 10 deletions(-)
+
+diff --git a/src/network/bridge_driver.c b/src/network/bridge_driver.c
+index b830cdba42..d5c544f556 100644
+--- a/src/network/bridge_driver.c
++++ b/src/network/bridge_driver.c
+@@ -2510,7 +2510,7 @@ networkStartNetworkVirtual(virNetworkDriverStatePtr driver,
+                        def->name);
+         return -1;
+     }
+-    if (virNetDevBridgeCreate(def->bridge) < 0)
++    if (virNetDevBridgeCreate(def->bridge, &def->mac) < 0)
+         return -1;
+ 
+     if (def->mac_specified) {
+diff --git a/src/util/virnetdevbridge.c b/src/util/virnetdevbridge.c
+index 4f21a82fb7..368ce912d1 100644
+--- a/src/util/virnetdevbridge.c
++++ b/src/util/virnetdevbridge.c
+@@ -379,7 +379,8 @@ virNetDevBridgePortSetUnicastFlood(const char *brname ATTRIBUTE_UNUSED,
+  */
+ #if defined(HAVE_STRUCT_IFREQ) && defined(SIOCBRADDBR)
+ static int
+-virNetDevBridgeCreateWithIoctl(const char *brname)
++virNetDevBridgeCreateWithIoctl(const char *brname,
++                               const virMacAddr *mac)
+ {
+     VIR_AUTOCLOSE fd = -1;
+ 
+@@ -392,22 +393,36 @@ virNetDevBridgeCreateWithIoctl(const char *brname)
+         return -1;
+     }
+ 
++    if (virNetDevSetMAC(brname, mac) < 0) {
++        virErrorPtr savederr;
++
++        virErrorPreserveLast(&savederr);
++        ignore_value(ioctl(fd, SIOCBRDELBR, brname));
++        virErrorRestore(&savederr);
++        return -1;
++    }
++
+     return 0;
+ }
+ #endif
+ 
+ #if defined(__linux__) && defined(HAVE_LIBNL)
+ int
+-virNetDevBridgeCreate(const char *brname)
++virNetDevBridgeCreate(const char *brname,
++                      const virMacAddr *mac)
+ {
+     /* use a netlink RTM_NEWLINK message to create the bridge */
+     int error = 0;
++    virNetlinkNewLinkData data = {
++        .mac = mac,
++    };
++
+ 
+-    if (virNetlinkNewLink(brname, "bridge", NULL, &error) < 0) {
++    if (virNetlinkNewLink(brname, "bridge", &data, &error) < 0) {
+ # if defined(HAVE_STRUCT_IFREQ) && defined(SIOCBRADDBR)
+         if (error == -EOPNOTSUPP) {
+             /* fallback to ioctl if netlink doesn't support creating bridges */
+-            return virNetDevBridgeCreateWithIoctl(brname);
++            return virNetDevBridgeCreateWithIoctl(brname, mac);
+         }
+ # endif
+         if (error < 0)
+@@ -423,15 +438,17 @@ virNetDevBridgeCreate(const char *brname)
+ 
+ #elif defined(HAVE_STRUCT_IFREQ) && defined(SIOCBRADDBR)
+ int
+-virNetDevBridgeCreate(const char *brname)
++virNetDevBridgeCreate(const char *brname,
++                      const virMacAddr *mac)
+ {
+-    return virNetDevBridgeCreateWithIoctl(brname);
++    return virNetDevBridgeCreateWithIoctl(brname, mac);
+ }
+ 
+ 
+ #elif defined(HAVE_STRUCT_IFREQ) && defined(SIOCIFCREATE2)
+ int
+-virNetDevBridgeCreate(const char *brname)
++virNetDevBridgeCreate(const char *brname,
++                      const virMacAddr *mac)
+ {
+     struct ifreq ifr;
+     VIR_AUTOCLOSE s = -1;
+@@ -448,10 +465,21 @@ virNetDevBridgeCreate(const char *brname)
+     if (virNetDevSetName(ifr.ifr_name, brname) == -1)
+         return -1;
+ 
++    if (virNetDevSetMAC(brname, mac) < 0) {
++        virErrorPtr savederr;
++
++        virErrorPreserveLast(&savederr);
++        ignore_value(virNetDevBridgeDelete(brname));
++        virErrorRestore(&savederr);
++        return -1;
++    }
++
+     return 0;
+ }
+ #else
+-int virNetDevBridgeCreate(const char *brname)
++int
++virNetDevBridgeCreate(const char *brname,
++                      const virMacAddr *mac G_GNUC_UNUSED)
+ {
+     virReportSystemError(ENOSYS,
+                          _("Unable to create bridge %s"), brname);
+diff --git a/src/util/virnetdevbridge.h b/src/util/virnetdevbridge.h
+index 8df5e51c2e..2a2bde8d0e 100644
+--- a/src/util/virnetdevbridge.h
++++ b/src/util/virnetdevbridge.h
+@@ -21,7 +21,8 @@
+ #include "internal.h"
+ #include "virmacaddr.h"
+ 
+-int virNetDevBridgeCreate(const char *brname)
++int virNetDevBridgeCreate(const char *brname,
++                          const virMacAddr *mac)
+     ATTRIBUTE_NONNULL(1) ATTRIBUTE_RETURN_CHECK;
+ int virNetDevBridgeDelete(const char *brname)
+     ATTRIBUTE_NONNULL(1) ATTRIBUTE_RETURN_CHECK;

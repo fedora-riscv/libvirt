@@ -1,0 +1,187 @@
+From: Michal Privoznik <mprivozn@redhat.com>
+Date: Sat, 5 Oct 2019 09:15:24 +0200
+Subject: [PATCH] lib: autostart objects exactly once
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+https://bugzilla.redhat.com/show_bug.cgi?id=1755303
+
+With the recent work in daemon split and socket activation
+daemons can come and go. They can and will be started many times
+during a session which results in objects being autostarted
+multiple times. This is not optimal. Use
+virDriverShouldAutostart() to determine if autostart should be
+done or not.
+
+Signed-off-by: Michal Privoznik <mprivozn@redhat.com>
+Reviewed-by: Daniel P. Berrangé <berrange@redhat.com>
+(cherry picked from commit bab464f8ea54d177e163f32c7c3476220694665c)
+---
+ src/bhyve/bhyve_driver.c     |  8 +++++++-
+ src/libxl/libxl_driver.c     | 10 ++++++++--
+ src/lxc/lxc_driver.c         |  7 ++++++-
+ src/network/bridge_driver.c  | 12 +++++++++---
+ src/qemu/qemu_driver.c       |  7 ++++++-
+ src/storage/storage_driver.c |  7 ++++++-
+ 6 files changed, 42 insertions(+), 9 deletions(-)
+
+diff --git a/src/bhyve/bhyve_driver.c b/src/bhyve/bhyve_driver.c
+index 5387ac5570..12788155a8 100644
+--- a/src/bhyve/bhyve_driver.c
++++ b/src/bhyve/bhyve_driver.c
+@@ -1218,6 +1218,8 @@ bhyveStateInitialize(bool privileged,
+                      virStateInhibitCallback callback ATTRIBUTE_UNUSED,
+                      void *opaque ATTRIBUTE_UNUSED)
+ {
++    bool autostart = true;
++
+     if (!privileged) {
+         VIR_INFO("Not running privileged, disabling driver");
+         return 0;
+@@ -1301,7 +1303,11 @@ bhyveStateInitialize(bool privileged,
+ 
+     virBhyveProcessReconnectAll(bhyve_driver);
+ 
+-    bhyveAutostartDomains(bhyve_driver);
++    if (virDriverShouldAutostart(BHYVE_STATE_DIR, &autostart) < 0)
++        goto cleanup;
++
++    if (autostart)
++        bhyveAutostartDomains(bhyve_driver);
+ 
+     return 0;
+ 
+diff --git a/src/libxl/libxl_driver.c b/src/libxl/libxl_driver.c
+index 492028c487..c1c94767c3 100644
+--- a/src/libxl/libxl_driver.c
++++ b/src/libxl/libxl_driver.c
+@@ -655,6 +655,7 @@ libxlStateInitialize(bool privileged,
+     libxlDriverConfigPtr cfg;
+     char *driverConf = NULL;
+     char ebuf[1024];
++    bool autostart = true;
+ 
+     if (!libxlDriverShouldLoad(privileged))
+         return 0;
+@@ -800,8 +801,13 @@ libxlStateInitialize(bool privileged,
+                                        NULL, NULL) < 0)
+         goto error;
+ 
+-    virDomainObjListForEach(libxl_driver->domains, libxlAutostartDomain,
+-                            libxl_driver);
++    if (virDriverShouldAutostart(cfg->stateDir, &autostart) < 0)
++        goto error;
++
++    if (autostart) {
++        virDomainObjListForEach(libxl_driver->domains, libxlAutostartDomain,
++                                libxl_driver);
++    }
+ 
+     virDomainObjListForEach(libxl_driver->domains, libxlDomainManagedSaveLoad,
+                             libxl_driver);
+diff --git a/src/lxc/lxc_driver.c b/src/lxc/lxc_driver.c
+index d0b6703101..24e6773f09 100644
+--- a/src/lxc/lxc_driver.c
++++ b/src/lxc/lxc_driver.c
+@@ -1541,6 +1541,7 @@ static int lxcStateInitialize(bool privileged,
+ {
+     virCapsPtr caps = NULL;
+     virLXCDriverConfigPtr cfg = NULL;
++    bool autostart = true;
+ 
+     /* Check that the user is root, silently disable if not */
+     if (!privileged) {
+@@ -1630,7 +1631,11 @@ static int lxcStateInitialize(bool privileged,
+                                        NULL, NULL) < 0)
+         goto cleanup;
+ 
+-    virLXCProcessAutostartAll(lxc_driver);
++    if (virDriverShouldAutostart(cfg->stateDir, &autostart) < 0)
++        goto cleanup;
++
++    if (autostart)
++        virLXCProcessAutostartAll(lxc_driver);
+ 
+     virObjectUnref(caps);
+     return 0;
+diff --git a/src/network/bridge_driver.c b/src/network/bridge_driver.c
+index acaeb5c9a2..b830cdba42 100644
+--- a/src/network/bridge_driver.c
++++ b/src/network/bridge_driver.c
+@@ -716,6 +716,7 @@ networkStateInitialize(bool privileged,
+     int ret = -1;
+     char *configdir = NULL;
+     char *rundir = NULL;
++    bool autostart = true;
+ #ifdef WITH_FIREWALLD
+     DBusConnection *sysbus = NULL;
+ #endif
+@@ -816,9 +817,14 @@ networkStateInitialize(bool privileged,
+     networkReloadFirewallRules(network_driver, true);
+     networkRefreshDaemons(network_driver);
+ 
+-    virNetworkObjListForEach(network_driver->networks,
+-                             networkAutostartConfig,
+-                             network_driver);
++    if (virDriverShouldAutostart(network_driver->stateDir, &autostart) < 0)
++        goto error;
++
++    if (autostart) {
++        virNetworkObjListForEach(network_driver->networks,
++                                 networkAutostartConfig,
++                                 network_driver);
++    }
+ 
+     network_driver->networkEventState = virObjectEventStateNew();
+ 
+diff --git a/src/qemu/qemu_driver.c b/src/qemu/qemu_driver.c
+index 69416d6d1a..5dd2616c7b 100644
+--- a/src/qemu/qemu_driver.c
++++ b/src/qemu/qemu_driver.c
+@@ -726,6 +726,7 @@ qemuStateInitialize(bool privileged,
+     gid_t run_gid = -1;
+     char *hugepagePath = NULL;
+     char *memoryBackingPath = NULL;
++    bool autostart = true;
+     size_t i;
+ 
+     if (VIR_ALLOC(qemu_driver) < 0)
+@@ -1071,7 +1072,11 @@ qemuStateInitialize(bool privileged,
+ 
+     qemuProcessReconnectAll(qemu_driver);
+ 
+-    qemuAutostartDomains(qemu_driver);
++    if (virDriverShouldAutostart(cfg->stateDir, &autostart) < 0)
++        goto error;
++
++    if (autostart)
++        qemuAutostartDomains(qemu_driver);
+ 
+     return 0;
+ 
+diff --git a/src/storage/storage_driver.c b/src/storage/storage_driver.c
+index 03ac6a6845..05192027d6 100644
+--- a/src/storage/storage_driver.c
++++ b/src/storage/storage_driver.c
+@@ -253,6 +253,7 @@ storageStateInitialize(bool privileged,
+ {
+     VIR_AUTOFREE(char *) configdir = NULL;
+     VIR_AUTOFREE(char *) rundir = NULL;
++    bool autostart = true;
+ 
+     if (VIR_ALLOC(driver) < 0)
+         return -1;
+@@ -314,7 +315,11 @@ storageStateInitialize(bool privileged,
+ 
+     storagePoolUpdateAllState();
+ 
+-    storageDriverAutostart();
++    if (virDriverShouldAutostart(driver->stateDir, &autostart) < 0)
++        goto error;
++
++    if (autostart)
++        storageDriverAutostart();
+ 
+     driver->storageEventState = virObjectEventStateNew();
+ 
