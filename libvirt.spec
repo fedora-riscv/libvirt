@@ -36,6 +36,11 @@
     %define qemu_kvm_arches x86_64 %{power64} aarch64 s390x
 %endif
 
+# On RHEL 7 and older macro _vpath_builddir is not defined.
+%if 0%{?rhel} <= 7
+    %define _vpath_builddir %{_target_platform}
+%endif
+
 %ifarch %{qemu_kvm_arches}
     %define with_qemu_kvm      %{with_qemu}
 %else
@@ -60,7 +65,15 @@
 %else
     %define with_storage_sheepdog 0
 %endif
+
 %define with_storage_gluster 0%{!?_without_storage_gluster:1}
+%ifnarch %{qemu_kvm_arches}
+    # gluster is only built where qemu driver is enabled on RHEL 8
+    %if 0%{?rhel} >= 8
+        %define with_storage_gluster 0
+    %endif
+%endif
+
 %define with_numactl          0%{!?_without_numactl:1}
 
 # F25+ has zfs-fuse
@@ -214,7 +227,7 @@
 
 Summary: Library providing a simple virtualization API
 Name: libvirt
-Version: 5.9.0
+Version: 5.10.0
 Release: 1%{?dist}
 License: LGPLv2+
 URL: https://libvirt.org/
@@ -1126,34 +1139,6 @@ exit 1
 
 %define arg_selinux_mount --with-selinux-mount="/sys/fs/selinux"
 
-%if 0%{?fedora}
-    # Nightly edk2.git-ovmf-x64
-    LOADERS="/usr/share/edk2.git/ovmf-x64/OVMF_CODE-pure-efi.fd:/usr/share/edk2.git/ovmf-x64/OVMF_VARS-pure-efi.fd"
-    # Nightly edk2.git-ovmf-ia32
-    LOADERS="$LOADERS:/usr/share/edk2.git/ovmf-ia32/OVMF_CODE-pure-efi.fd:/usr/share/edk2.git/ovmf-ia32/OVMF_VARS-pure-efi.fd"
-    # Nightly edk2.git-aarch64
-    LOADERS="$LOADERS:/usr/share/edk2.git/aarch64/QEMU_EFI-pflash.raw:/usr/share/edk2.git/aarch64/vars-template-pflash.raw"
-    # Nightly edk2.git-arm
-    LOADERS="$LOADERS:/usr/share/edk2.git/arm/QEMU_EFI-pflash.raw:/usr/share/edk2.git/arm/vars-template-pflash.raw"
-
-    # Fedora edk2-ovmf, x86_64
-    LOADERS="$LOADERS:/usr/share/edk2/ovmf/OVMF_CODE.fd:/usr/share/edk2/ovmf/OVMF_VARS.fd"
-    # Fedora edk2-ovmf, x86_64, with Secure Boot
-    LOADERS="$LOADERS:/usr/share/edk2/ovmf/OVMF_CODE.secboot.fd:/usr/share/edk2/ovmf/OVMF_VARS.secboot.fd"
-    # Fedora edk2-ovmf-ia32
-    LOADERS="$LOADERS:/usr/share/edk2/ovmf-ia32/OVMF_CODE.fd:/usr/share/edk2/ovmf-ia32/OVMF_VARS.fd"
-    # Fedora edk2-ovmf-ia32, with Secure Boot.  (NB: Unlike x86_64, for
-    # 'ia32', there is no secboot-variant "VARS" file (NVRAM template).
-    # So the NVRAM template for 'ovmf-ia32/OVMF_CODE.secboot.fd' is the
-    # same as the one for the non-secboot variant.)
-    LOADERS="$LOADERS:/usr/share/edk2/ovmf-ia32/OVMF_CODE.secboot.fd:/usr/share/edk2/ovmf-ia32/OVMF_VARS.fd"
-    # Fedora edk2-aarch64
-    LOADERS="$LOADERS:/usr/share/edk2/aarch64/QEMU_EFI-pflash.raw:/usr/share/edk2/aarch64/vars-template-pflash.raw"
-    # Fedora edk2-arm
-    LOADERS="$LOADERS:/usr/share/edk2/arm/QEMU_EFI-pflash.raw:/usr/share/edk2/arm/vars-template-pflash.raw"
-    %define arg_loader_nvram --with-loader-nvram="$LOADERS"
-%endif
-
 # place macros above and build commands below this comment
 
 export SOURCE_DATE_EPOCH=$(stat --printf='%Y' %{_specdir}/%{name}.spec)
@@ -1163,7 +1148,13 @@ export SOURCE_DATE_EPOCH=$(stat --printf='%Y' %{_specdir}/%{name}.spec)
 %endif
 
 rm -f po/stamp-po
-%configure --with-runstatedir=%{_rundir} \
+
+%define _configure ../configure
+mkdir %{_vpath_builddir}
+cd %{_vpath_builddir}
+
+%configure --enable-dependency-tracking \
+           --with-runstatedir=%{_rundir} \
            %{?arg_qemu} \
            %{?arg_openvz} \
            %{?arg_lxc} \
@@ -1220,7 +1211,6 @@ rm -f po/stamp-po
            --with-qemu-user=%{qemu_user} \
            --with-qemu-group=%{qemu_group} \
            --with-tls-priority=%{tls_priority} \
-           %{?arg_loader_nvram} \
            %{?enable_werror} \
            --enable-expensive-tests \
            --with-init-script=systemd \
@@ -1232,6 +1222,7 @@ rm -fr %{buildroot}
 
 export SOURCE_DATE_EPOCH=$(stat --printf='%Y' %{_specdir}/%{name}.spec)
 
+cd %{_vpath_builddir}
 %make_install %{?_smp_mflags} SYSTEMD_UNIT_DIR=%{_unitdir} V=1
 
 rm -f $RPM_BUILD_ROOT%{_libdir}/*.la
@@ -1313,6 +1304,7 @@ mv $RPM_BUILD_ROOT%{_datadir}/systemtap/tapset/libvirt_qemu_probes.stp \
 %endif
 
 %check
+cd %{_vpath_builddir}
 if ! make %{?_smp_mflags} check VIR_TEST_DEBUG=1
 then
   cat test-suite.log || true
@@ -1524,7 +1516,7 @@ exit 0
 
 %files docs
 %doc AUTHORS ChangeLog NEWS README README.md
-%doc libvirt-docs/*
+%doc %{_vpath_builddir}/libvirt-docs/*
 
 %files daemon
 
@@ -1884,7 +1876,7 @@ exit 0
 %config(noreplace) %{_sysconfdir}/sysconfig/libvirt-guests
 %attr(0755, root, root) %{_libexecdir}/libvirt-guests.sh
 
-%files libs -f %{name}.lang
+%files libs -f %{_vpath_builddir}/%{name}.lang
 %license COPYING COPYING.LESSER
 %config(noreplace) %{_sysconfdir}/libvirt/libvirt.conf
 %config(noreplace) %{_sysconfdir}/libvirt/libvirt-admin.conf
@@ -1988,6 +1980,9 @@ exit 0
 
 
 %changelog
+* Tue Dec 03 2019 Cole Robinson <crobinso@redhat.com> - 5.10.0-1
+- Update to version 5.10.0
+
 * Mon Nov 11 2019 Cole Robinson <crobinso@redhat.com> - 5.9.0-1
 - Update to version 5.9.0
 
