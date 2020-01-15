@@ -4,7 +4,7 @@
 # that's still supported by the vendor. It may work on other distros
 # or versions, but no effort will be made to ensure that going forward.
 %define min_rhel 7
-%define min_fedora 29
+%define min_fedora 30
 
 %if (0%{?fedora} && 0%{?fedora} >= %{min_fedora}) || (0%{?rhel} && 0%{?rhel} >= %{min_rhel})
     %define supported_platform 1
@@ -54,7 +54,6 @@
 # Then the hypervisor drivers that run outside libvirtd, in libvirt.so
 %define with_openvz        0%{!?_without_openvz:1}
 %define with_vmware        0%{!?_without_vmware:1}
-%define with_phyp          0%{!?_without_phyp:1}
 %define with_esx           0%{!?_without_esx:1}
 %define with_hyperv        0%{!?_without_hyperv:1}
 
@@ -136,7 +135,6 @@
 %if 0%{?rhel}
     %define with_openvz 0
     %define with_vbox 0
-    %define with_phyp 0
     %define with_vmware 0
     %define with_libxl 0
     %define with_hyperv 0
@@ -188,14 +186,6 @@
 
 %define with_bash_completion  0%{!?_without_bash_completion:1}
 
-# Use Python 3 when possible, Python 2 otherwise
-%if 0%{?fedora} || 0%{?rhel} > 7
-    %define python python3
-%else
-    %define python python2
-%endif
-
-
 %if %{with_qemu} || %{with_lxc}
 # numad is used to manage the CPU and memory placement dynamically,
 # it's not available on many non-x86 architectures.
@@ -227,8 +217,8 @@
 
 Summary: Library providing a simple virtualization API
 Name: libvirt
-Version: 5.10.0
-Release: 2%{?dist}
+Version: 6.0.0
+Release: 1%{?dist}
 License: LGPLv2+
 URL: https://libvirt.org/
 
@@ -236,9 +226,6 @@ URL: https://libvirt.org/
     %define mainturl stable_updates/
 %endif
 Source: https://libvirt.org/sources/%{?mainturl}libvirt-%{version}.tar.xz
-
-# Fix test suite
-Patch0001: 0001-news-Fix-XML-validation.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-config-network = %{version}-%{release}
@@ -275,7 +262,11 @@ BuildRequires: autoconf
 BuildRequires: automake
 BuildRequires: gettext-devel
 BuildRequires: libtool
-BuildRequires: /usr/bin/pod2man
+%endif
+%if 0%{?rhel} == 7
+BuildRequires: python36-docutils
+%else
+BuildRequires: python3-docutils
 %endif
 BuildRequires: gcc
 BuildRequires: git
@@ -284,7 +275,7 @@ BuildRequires: perl-interpreter
 %else
 BuildRequires: perl
 %endif
-BuildRequires: %{python}
+BuildRequires: python3
 BuildRequires: systemd-units
 %if %{with_libxl}
 BuildRequires: xen-devel
@@ -344,8 +335,13 @@ BuildRequires: device-mapper-devel
 # For XFS reflink clone support
 BuildRequires: xfsprogs-devel
 %if %{with_storage_rbd}
+    %if 0%{?fedora} || 0%{?rhel} > 7
+BuildRequires: librados-devel
+BuildRequires: librbd-devel
+    %else
 BuildRequires: librados2-devel
 BuildRequires: librbd1-devel
+    %endif
 %endif
 %if %{with_storage_gluster}
 BuildRequires: glusterfs-api-devel >= 3.4.1
@@ -368,7 +364,7 @@ BuildRequires: libcap-ng-devel >= 0.5.0
 %if %{with_fuse}
 BuildRequires: fuse-devel >= 2.8.6
 %endif
-%if %{with_phyp} || %{with_libssh2}
+%if %{with_libssh2}
 BuildRequires: libssh2-devel >= 1.3.0
 %endif
 
@@ -1038,12 +1034,6 @@ exit 1
     %define arg_libxl --without-libxl
 %endif
 
-%if %{with_phyp}
-    %define arg_phyp --with-phyp
-%else
-    %define arg_phyp --without-phyp
-%endif
-
 %if %{with_esx}
     %define arg_esx --with-esx
 %else
@@ -1166,7 +1156,6 @@ cd %{_vpath_builddir}
            --with-sasl \
            --with-polkit \
            --with-libvirtd \
-           %{?arg_phyp} \
            %{?arg_esx} \
            %{?arg_hyperv} \
            %{?arg_vmware} \
@@ -1310,7 +1299,7 @@ mv $RPM_BUILD_ROOT%{_datadir}/systemtap/tapset/libvirt_qemu_probes.stp \
 cd %{_vpath_builddir}
 if ! make %{?_smp_mflags} check VIR_TEST_DEBUG=1
 then
-  cat test-suite.log || true
+  cat tests/test-suite.log || true
   exit 1
 fi
 
@@ -1895,6 +1884,7 @@ exit 0
 %{_datadir}/libvirt/schemas/capability.rng
 %{_datadir}/libvirt/schemas/cputypes.rng
 %{_datadir}/libvirt/schemas/domain.rng
+%{_datadir}/libvirt/schemas/domainbackup.rng
 %{_datadir}/libvirt/schemas/domaincaps.rng
 %{_datadir}/libvirt/schemas/domaincheckpoint.rng
 %{_datadir}/libvirt/schemas/domaincommon.rng
@@ -1983,6 +1973,9 @@ exit 0
 
 
 %changelog
+* Wed Jan 15 2020 Cole Robinson <crobinso@redhat.com> - 6.0.0-1
+- Update to version 6.0.0
+
 * Thu Dec 19 2019 Adam Williamson <awilliam@redhat.com> - 5.10.0-2
 - Rebuild for new xen-libs
 
@@ -2066,58 +2059,3 @@ exit 0
 
 * Mon Jan 21 2019 Daniel P. Berrangé <berrange@redhat.com> - 5.0.0-1
 - Update to 5.0.0 release
-
-* Mon Dec 10 2018 Daniel P. Berrangé <berrange@redhat.com> - 4.10.0-2
-- Disable RBD on 32-bit arches (rhbz #1657928)
-
-* Mon Dec  3 2018 Daniel P. Berrangé <berrange@redhat.com> - 4.10.0-1
-- Update to 4.10.0 release
-
-* Mon Nov 12 2018 Daniel P. Berrangé <berrange@redhat.com> - 4.9.0-1
-- Update to 4.9.0 release
-
-* Fri Oct  5 2018 Daniel P. Berrangé <berrange@redhat.com> - 4.8.0-1
-- Update to 4.8.0 release
-
-* Tue Sep  4 2018 Daniel P. Berrangé <berrange@redhat.com> - 4.7.0-1
-- Update to 4.7.0 release
-
-* Sat Aug 18 2018 David Abdurachmanov <david.abdurachmanov@gmail.com> - 4.6.0-2
-- Add support for RISC-V (riscv64)
-
-* Mon Aug  6 2018 Daniel P. Berrangé <berrange@redhat.com> - 4.6.0-1
-- Update to 4.6.0 release
-
-* Fri Jul 13 2018 Fedora Release Engineering <releng@fedoraproject.org> - 4.5.0-3
-- Rebuilt for https://fedoraproject.org/wiki/Fedora_29_Mass_Rebuild
-
-* Fri Jul  6 2018 Daniel P. Berrangé <berrange@redhat.com> - 4.5.0-2
-- Fix regressions with chardev handling
-
-* Tue Jul  3 2018 Daniel P. Berrangé <berrange@redhat.com> - 4.5.0-1
-- Update to 4.5.0 release
-
-* Tue Jun  5 2018 Daniel P. Berrangé <berrange@redhat.com> - 4.4.0-1
-- Update to 4.4.0 release
-
-* Thu May  3 2018 Daniel P. Berrangé <berrange@redhat.com> - 4.3.0-1
-- Update to 4.3.0 release
-
-* Tue Apr  3 2018 Daniel P. Berrangé <berrange@redhat.com> - 4.2.0-1
-- Update to 4.2.0 release
-
-* Fri Mar 23 2018 Iryna Shcherbina <ishcherb@redhat.com> - 4.1.0-3
-- Update Python 2 dependency declarations to new packaging standards
-  (See https://fedoraproject.org/wiki/FinalizingFedoraSwitchtoPython3)
-
-* Wed Mar 21 2018 Daniel P. Berrangé <berrange@redhat.com> - 4.1.0-2
-- Fix systemd macro argument with line continuations (rhbz#1558648)
-
-* Mon Mar  5 2018 Daniel Berrange <berrange@redhat.com> - 4.1.0-1
-- Rebase to version 4.1.0
-
-* Wed Feb 07 2018 Fedora Release Engineering <releng@fedoraproject.org> - 4.0.0-2
-- Rebuilt for https://fedoraproject.org/wiki/Fedora_28_Mass_Rebuild
-
-* Fri Jan 19 2018 Daniel P. Berrange <berrange@redhat.com> - 4.0.0-1
-- Rebase to version 4.0.0
