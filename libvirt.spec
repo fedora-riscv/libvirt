@@ -218,7 +218,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 6.0.0
-Release: 2%{?dist}
+Release: 3%{?dist}
 License: LGPLv2+
 URL: https://libvirt.org/
 
@@ -1973,6 +1973,9 @@ exit 0
 
 
 %changelog
+* Tue Feb 25 2020 Cole Robinson <crobinso@redhat.com> - 6.0.0-3
+- Rebuild for libiscsi soname bump
+
 * Wed Jan 29 2020 Fedora Release Engineering <releng@fedoraproject.org> - 6.0.0-2
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_32_Mass_Rebuild
 
