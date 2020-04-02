@@ -217,8 +217,8 @@
 
 Summary: Library providing a simple virtualization API
 Name: libvirt
-Version: 6.1.0
-Release: 2%{?dist}
+Version: 6.2.0
+Release: 1%{?dist}
 License: LGPLv2+
 URL: https://libvirt.org/
 
@@ -226,7 +226,6 @@ URL: https://libvirt.org/
     %define mainturl stable_updates/
 %endif
 Source: https://libvirt.org/sources/%{?mainturl}libvirt-%{version}.tar.xz
-Patch0001: check-for-disk-type-correctly.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-config-network = %{version}-%{release}
@@ -1974,6 +1973,9 @@ exit 0
 
 
 %changelog
+* Thu Apr 02 2020 Cole Robinson <crobinso@redhat.com> - 6.2.0-1
+- Update to version 6.2.0
+
 * Tue Mar 24 2020 Felipe Borges <feborges@redhat.com> - 6.1.0-2
 - Check for disk type correctly in virDomainDiskTranslateSourcePool
 
