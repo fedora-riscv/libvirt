@@ -1,0 +1,54 @@
+From: Michal Privoznik <mprivozn@redhat.com>
+Date: Tue, 17 Dec 2019 14:08:42 +0100
+Subject: [PATCH] remote_daemon: Initialize host boot time global variable
+
+This is not strictly needed, but it makes sure we initialize the
+@bootTime global variable. Thing is, in order to validate XATTRs
+and prune those set in some previous runs of the host, a
+timestamp is recorded in XATTRs. The host boot time was unique
+enough so it was chosen as the timestamp value. And to avoid
+querying and parsing /proc/uptime every time, the query function
+does that only once and stores the boot time in a global
+variable. However, the only time the query function is called is
+in a child process that does lock files and changes seclabels. So
+effectively, we are doing exactly what we wanted to prevent from
+happening.
+
+The fix is simple, call the virHostBootTimeInit() function which
+sets the global variable.
+
+Signed-off-by: Michal Privoznik <mprivozn@redhat.com>
+Reviewed-by: Cole Robinson <crobinso@redhat.com>
+(cherry picked from commit 35d603d5ae0abe91b8b48203c5b7051b1800682b)
+Signed-off-by: rpm-build <rpm-build>
+---
+ src/remote/remote_daemon.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/src/remote/remote_daemon.c b/src/remote/remote_daemon.c
+index 6b5a6c1523..43f9527405 100644
+--- a/src/remote/remote_daemon.c
++++ b/src/remote/remote_daemon.c
+@@ -57,6 +57,7 @@
+ #include "virgettext.h"
+ #include "util/virnetdevopenvswitch.h"
+ #include "virsystemd.h"
++#include "virhostuptime.h"
+ 
+ #include "driver.h"
+ 
+@@ -1088,6 +1089,14 @@ int main(int argc, char **argv) {
+         exit(EXIT_FAILURE);
+     }
+ 
++    /* Let's try to initialize global variable that holds the host's boot time. */
++    if (virHostBootTimeInit() < 0) {
++        /* This is acceptable failure. Maybe we won't need the boot time
++         * anyway, and if we do, then virHostGetBootTime() returns an
++         * appropriate error. */
++        VIR_DEBUG("Ignoring failed boot time init");
++    }
++
+     daemonSetupNetDevOpenvswitch(config);
+ 
+     if (daemonSetupAccessManager(config) < 0) {

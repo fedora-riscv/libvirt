@@ -1,0 +1,31 @@
+From: Michal Privoznik <mprivozn@redhat.com>
+Date: Thu, 14 Nov 2019 16:42:51 +0100
+Subject: [PATCH] virhostuptime: Wrap virHostGetBootTimeProcfs() call in an
+ ifdef
+
+The virHostGetBootTimeProcfs() function is defined only for Linux
+and therefore it's only call should also be done if we're on
+Linux.
+
+Signed-off-by: Michal Privoznik <mprivozn@redhat.com>
+(cherry picked from commit 1b0de07f41bbe0d23ab96b604428ae55fd22aec0)
+Signed-off-by: rpm-build <rpm-build>
+---
+ src/util/virhostuptime.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/src/util/virhostuptime.c b/src/util/virhostuptime.c
+index a203961996..94004d05db 100644
+--- a/src/util/virhostuptime.c
++++ b/src/util/virhostuptime.c
+@@ -99,8 +99,10 @@ virHostGetBootTimeOnceInit(void)
+     endutxent();
+ # endif /* HAVE_GETUTXID */
+ 
++# ifdef __linux__
+     if (bootTimeErrno != 0 || bootTime == 0)
+         bootTimeErrno = -virHostGetBootTimeProcfs(&bootTime);
++# endif /* __linux__ */
+ }
+ 
+ #else /* !defined(HAVE_GETUTXID) && !defined(__linux__) */

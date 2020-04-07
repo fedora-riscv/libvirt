@@ -218,7 +218,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 5.6.0
-Release: 5%{?dist}
+Release: 6%{?dist}
 License: LGPLv2+
 URL: https://libvirt.org/
 
@@ -271,6 +271,11 @@ Patch0118: 0118-Revert-src-Document-autostart-for-session-demon.patch
 # set bridge device MAC address explicitly (bz #1760851)
 Patch0119: 0119-util-allow-sending-mac-addr-to-virNetNewLink-without.patch
 Patch0120: 0120-util-set-bridge-device-MAC-address-explicitly-during.patch
+# Fix issues with uptime detection (bz #1783715)
+Patch0121: 0121-virhostuptime-Add-linux-stub-for-musl.patch
+Patch0122: 0122-virhostuptime-Wrap-virHostGetBootTimeProcfs-call-in-.patch
+Patch0123: 0123-virhostuptime-Introduce-virHostBootTimeInit.patch
+Patch0124: 0124-remote_daemon-Initialize-host-boot-time-global-varia.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-config-network = %{version}-%{release}
@@ -1935,6 +1940,9 @@ exit 0
 
 
 %changelog
+* Tue Apr 07 2020 Cole Robinson <crobinso@redhat.com> - 5.6.0-6
+- Fix issues with uptime detection (bz #1783715)
+
 * Mon Nov 11 2019 Cole Robinson <crobinso@redhat.com> - 5.6.0-5
 - Don't re-autostart objects when using socket activation (bz #1759613)
 - set bridge device MAC address explicitly (bz #1760851)
