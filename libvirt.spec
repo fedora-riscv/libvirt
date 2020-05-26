@@ -218,7 +218,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 6.1.0
-Release: 2%{?dist}
+Release: 3%{?dist}
 License: LGPLv2+
 URL: https://libvirt.org/
 
@@ -226,7 +226,14 @@ URL: https://libvirt.org/
     %define mainturl stable_updates/
 %endif
 Source: https://libvirt.org/sources/%{?mainturl}libvirt-%{version}.tar.xz
-Patch0001: check-for-disk-type-correctly.patch
+
+# Check for disk type correctly in virDomainDiskTranslateSourcePool
+Patch0001: 0001-virDomainDiskTranslateSourcePool-Check-for-disk-type.patch
+# Fix iptables No chain/target/match by that name (bz #1813830)
+Patch0002: 0002-network-make-it-safe-to-call-networkSetupPrivateChai.patch
+Patch0003: 0003-network-force-re-creation-of-iptables-private-chains.patch
+# systemd: start libvirtd after firewalld/iptables services (bz #1697636)
+Patch0004: 0004-systemd-start-libvirtd-after-firewalld-iptables-serv.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-config-network = %{version}-%{release}
@@ -1974,6 +1981,10 @@ exit 0
 
 
 %changelog
+* Tue May 26 2020 Cole Robinson <crobinso@redhat.com> - 6.1.0-3
+- Fix iptables No chain/target/match by that name (bz #1813830)
+- systemd: start libvirtd after firewalld/iptables services (bz #1697636)
+
 * Tue Mar 24 2020 Felipe Borges <feborges@redhat.com> - 6.1.0-2
 - Check for disk type correctly in virDomainDiskTranslateSourcePool
 
