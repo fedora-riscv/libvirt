@@ -1,0 +1,85 @@
+From: Laine Stump <laine@redhat.com>
+Date: Fri, 1 May 2020 00:05:50 -0400
+Subject: [PATCH] systemd: start libvirtd after firewalld/iptables services
+
+When a system has enabled the iptables/ip6tables services rather than
+firewalld, there is no explicit ordering of the start of those
+services vs. libvirtd. This creates a problem when libvirtd.service is
+started before ip[6]tables, as the latter, when it finally is started,
+will remove all of the iptables rules that had previously been added
+by libvirt, including the custom chains where libvirt's rules are
+kept. This results in an error message similar to the following when a
+user subsequently tries to start a new libvirt network:
+
+ "Error while activating network: Call to virNetworkCreate failed:
+ internal error: Failed to apply firewall rules
+ /usr/sbin/ip6tables -w --table filter --insert LIBVIRT_FWO \
+   --in-interface virbr2 --jump REJECT:
+ ip6tables: No chain/target/match by that name."
+
+(Prior to logging this error, it also would have caused failure to
+forward (or block) traffic in some cases, e.g. for guests on a NATed
+network, since libvirt's rules to forward/block had all been deleted
+and libvirt didn't know about it, so it couldn't fix the problem)
+
+When this happens, the problem can be remedied by simply restarting
+libvirtd.service (which has the side-effect of reloading all
+libvirt-generated firewall rules)
+
+Instead, we can just explicitly stating in the libvirtd.service file
+that libvirtd.service should start after ip6tables.service and
+ip6tables.service, eliminating the race condition that leads to the
+error.
+
+There is also nothing (that I can see) in the systemd .service files
+to guarantee that firewalld.service will be started (if enabled) prior
+to libvirtd.service. The same error scenario given above would occur
+if libvirtd.service started before firewalld.service.  Even before
+that, though libvirtd would have detected that firewalld.service was
+disabled, and then turn off all firewalld support. So, for example,
+firewalld's libvirt zone wouldn't be used, and most likely traffic
+from guests would therefore be blocked (all with no external
+indication of the source of the problem other than a debug-level log
+when libvirtd was started saying that firewalld wasn't in use); also
+libvirtd wouldn't notice when firewalld reloaded its rules (which also
+simultaneously deletes all of libvirt's rules).
+
+I'm not aware of any reports that have been traced back to
+libvirtd.service starting before firewalld.service, but have seen that
+error reported multiple times, and also don't see an existing
+dependency that would guarantee firewalld.service starts before
+libvirtd.service, so it's possible it's been happening and we just
+haven't gotten to the bottom of it.
+
+This patch adds an After= line to the libvirtd.service file for each
+of iptables.service, ip6tables.service, and firewalld.servicee, which
+should guarantee that libvirtd.service isn't started until systemd has
+started whichever of the others is enabled.
+
+This race was diagnosed, and patch proposed, by Jason Montleon in
+https://bugzilla.redhat.com/1723698 . At the time (April 2019) danpb
+agreed with him that this change to libvirtd.service was a reasonable
+thing to do, but I guess everyone thought someone else was going to
+post a patch, so in the end nobody did.
+
+Signed-off-by: Laine Stump <laine@redhat.com>
+Reviewed-by: Michal Privoznik <mprivozn@redhat.com>
+(cherry picked from commit 0756415f147dda15a417bd79eef9a62027d176e6)
+---
+ src/remote/libvirtd.service.in | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/src/remote/libvirtd.service.in b/src/remote/libvirtd.service.in
+index d5d98f0c12..ada5be62e6 100644
+--- a/src/remote/libvirtd.service.in
++++ b/src/remote/libvirtd.service.in
+@@ -11,6 +11,9 @@ Wants=libvirtd-admin.socket
+ Wants=systemd-machined.service
+ Before=libvirt-guests.service
+ After=network.target
++After=firewalld.service
++After=iptables.service
++After=ip6tables.service
+ After=dbus.service
+ After=iscsid.service
+ After=apparmor.service

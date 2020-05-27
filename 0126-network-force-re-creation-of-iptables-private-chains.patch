@@ -1,0 +1,265 @@
+From: Laine Stump <laine@redhat.com>
+Date: Thu, 7 May 2020 21:54:39 -0400
+Subject: [PATCH] network: force re-creation of iptables private chains on
+ firewalld restart
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+When firewalld is stopped, it removes *all* iptables rules and chains,
+including those added by libvirt. Since restarting firewalld means
+stopping and then starting it, any time it is restarted, libvirt needs
+to recreate all the private iptables chains it uses, along with all
+the rules it adds.
+
+We already have code in place to call networkReloadFirewallRules() any
+time we're notified of a firewalld start, and
+networkReloadFirewallRules() will call
+networkPreReloadFirewallRules(), which calls
+networkSetupPrivateChains(); unfortunately that last call is called
+using virOnce(), meaning that it will only be called the first time
+through networkPreReloadFirewallRules() after libvirtd starts - so of
+course when firewalld is later restarted, the call to
+networkSetupPrivateChains() is skipped.
+
+The neat and tidy way to fix this would be if there was a standard way
+to reset a pthread_once_t object so that the next time virOnce was
+called, it would think the function hadn't been called, and call it
+again. Unfortunately, there isn't any official way of doing that (we
+*could* just fill it with 0 and hope for the best, but that doesn't
+seem very safe.
+
+So instead, this patch just adds a static variable called
+chainInitDone, which is set to true after networkSetupPrivateChains()
+is called for the first time, and then during calls to
+networkPreReloadFirewallRules(), if chainInitDone is set, we call
+networkSetupPrivateChains() directly instead of via virOnce().
+
+It may seem unsafe to directly call a function that is meant to be
+called only once, but I think in this case we're safe - there's
+nothing in the function that is inherently "once only" - it doesn't
+initialize anything that can't safely be re-initialized (as long as
+two threads don't try to do it at the same time), and it only happens
+when responding to a dbus message that firewalld has been started (and
+I don't think it's possible for us to be processing two of those at
+once), and even then only if the initial call to the function has
+already been completed (so we're safe if we receive a firewalld
+restart call at a time when we haven't yet called it, or even if
+another thread is already in the process of executing it. The only
+problematic bit I can think of is if another thread is in the process
+of adding an iptable rule at the time we're executing this function,
+but 1) none of those threads will be trying to add chains, and 2) if
+there was a concurrency problem with other threads adding iptables
+rules while firewalld was being restarted, it would still be a problem
+even without this change.
+
+This is yet another patch that fixes an occurrence of this error:
+
+COMMAND_FAILED: '/usr/sbin/iptables -w10 -w --table filter --insert LIBVIRT_INP --in-interface virbr0 --protocol tcp --destination-port 67 --jump ACCEPT' failed: iptables: No chain/target/match by that name.
+
+In particular, this resolves: https://bugzilla.redhat.com/1813830
+
+Signed-off-by: Laine Stump <laine@redhat.com>
+Reviewed-by: Daniel P. Berrangé <berrange@redhat.com>
+(cherry picked from commit f5418b427e7d2f26803880309478de9103680826)
+---
+ src/network/bridge_driver.c          | 16 ++++---
+ src/network/bridge_driver_linux.c    | 69 ++++++++++++++++++----------
+ src/network/bridge_driver_nop.c      |  3 +-
+ src/network/bridge_driver_platform.h |  2 +-
+ 4 files changed, 58 insertions(+), 32 deletions(-)
+
+diff --git a/src/network/bridge_driver.c b/src/network/bridge_driver.c
+index d5c544f556..981b4e4578 100644
+--- a/src/network/bridge_driver.c
++++ b/src/network/bridge_driver.c
+@@ -289,7 +289,9 @@ static int
+ networkShutdownNetworkExternal(virNetworkObjPtr obj);
+ 
+ static void
+-networkReloadFirewallRules(virNetworkDriverStatePtr driver, bool startup);
++networkReloadFirewallRules(virNetworkDriverStatePtr driver,
++                           bool startup,
++                           bool force);
+ 
+ static void
+ networkRefreshDaemons(virNetworkDriverStatePtr driver);
+@@ -695,7 +697,7 @@ firewalld_dbus_filter_bridge(DBusConnection *connection ATTRIBUTE_UNUSED,
+ 
+     if (reload) {
+         VIR_DEBUG("Reload in bridge_driver because of firewalld.");
+-        networkReloadFirewallRules(driver, false);
++        networkReloadFirewallRules(driver, false, true);
+     }
+ 
+     return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+@@ -814,7 +816,7 @@ networkStateInitialize(bool privileged,
+     virNetworkObjListPrune(network_driver->networks,
+                            VIR_CONNECT_LIST_NETWORKS_INACTIVE |
+                            VIR_CONNECT_LIST_NETWORKS_TRANSIENT);
+-    networkReloadFirewallRules(network_driver, true);
++    networkReloadFirewallRules(network_driver, true, false);
+     networkRefreshDaemons(network_driver);
+ 
+     if (virDriverShouldAutostart(network_driver->stateDir, &autostart) < 0)
+@@ -884,7 +886,7 @@ networkStateReload(void)
+                                 network_driver->networkConfigDir,
+                                 network_driver->networkAutostartDir,
+                                 network_driver->xmlopt);
+-    networkReloadFirewallRules(network_driver, false);
++    networkReloadFirewallRules(network_driver, false, false);
+     networkRefreshDaemons(network_driver);
+     virNetworkObjListForEach(network_driver->networks,
+                              networkAutostartConfig,
+@@ -2267,14 +2269,16 @@ networkReloadFirewallRulesHelper(virNetworkObjPtr obj,
+ 
+ 
+ static void
+-networkReloadFirewallRules(virNetworkDriverStatePtr driver, bool startup)
++networkReloadFirewallRules(virNetworkDriverStatePtr driver,
++                           bool startup,
++                           bool force)
+ {
+     VIR_INFO("Reloading iptables rules");
+     /* Ideally we'd not even register the driver when unprivilegd
+      * but until we untangle the virt driver that's not viable */
+     if (!driver->privileged)
+         return;
+-    networkPreReloadFirewallRules(driver, startup);
++    networkPreReloadFirewallRules(driver, startup, force);
+     virNetworkObjListForEach(driver->networks,
+                              networkReloadFirewallRulesHelper,
+                              NULL);
+diff --git a/src/network/bridge_driver_linux.c b/src/network/bridge_driver_linux.c
+index f4e4e2df76..f65928e556 100644
+--- a/src/network/bridge_driver_linux.c
++++ b/src/network/bridge_driver_linux.c
+@@ -36,11 +36,14 @@ VIR_LOG_INIT("network.bridge_driver_linux");
+ #define PROC_NET_ROUTE "/proc/net/route"
+ 
+ static virOnceControl createdOnce;
+-static bool createdChains;
++static bool chainInitDone; /* true iff networkSetupPrivateChains was ever called */
++static bool createdChains; /* true iff networkSetupPrivateChains created chains during most recent call */
+ static virErrorPtr errInitV4;
+ static virErrorPtr errInitV6;
+ 
+-/* Only call via virOnce */
++/* Usually only called via virOnce, but can also be called directly in
++ * response to firewalld reload (if chainInitDone == true)
++ */
+ static void networkSetupPrivateChains(void)
+ {
+     int rc;
+@@ -82,6 +85,8 @@ static void networkSetupPrivateChains(void)
+             VIR_DEBUG("Global IPv6 chains already exist");
+         }
+     }
++
++    chainInitDone = true;
+ }
+ 
+ 
+@@ -111,7 +116,10 @@ networkHasRunningNetworks(virNetworkDriverStatePtr driver)
+ }
+ 
+ 
+-void networkPreReloadFirewallRules(virNetworkDriverStatePtr driver, bool startup)
++void
++networkPreReloadFirewallRules(virNetworkDriverStatePtr driver,
++                              bool startup,
++                              bool force)
+ {
+     /*
+      * If there are any running networks, we need to
+@@ -130,29 +138,42 @@ void networkPreReloadFirewallRules(virNetworkDriverStatePtr driver, bool startup
+      * of starting the network though as that makes them
+      * more likely to be seen by a human
+      */
+-    if (!networkHasRunningNetworks(driver)) {
+-        VIR_DEBUG("Delayed global rule setup as no networks are running");
+-        return;
+-    }
++    if (chainInitDone && force) {
++        /* The Private chains have already been initialized once
++         * during this run of libvirtd, so 1) we can't do it again via
++         * virOnce(), and 2) we need to re-add the private chains even
++         * if there are currently no running networks, because the
++         * next time a network is started, libvirt will expect that
++         * the chains have already been added. So we call directly
++         * instead of via virOnce().
++         */
++        networkSetupPrivateChains();
+ 
+-    ignore_value(virOnce(&createdOnce, networkSetupPrivateChains));
++    } else {
++        if (!networkHasRunningNetworks(driver)) {
++            VIR_DEBUG("Delayed global rule setup as no networks are running");
++            return;
++        }
+ 
+-    /*
+-     * If this is initial startup, and we just created the
+-     * top level private chains we either
+-     *
+-     *   - upgraded from old libvirt
+-     *   - freshly booted from clean state
+-     *
+-     * In the first case we must delete the old rules from
+-     * the built-in chains, instead of our new private chains.
+-     * In the second case it doesn't matter, since no existing
+-     * rules will be present. Thus we can safely just tell it
+-     * to always delete from the builin chain
+-     */
+-    if (startup && createdChains) {
+-        VIR_DEBUG("Requesting cleanup of legacy firewall rules");
+-        iptablesSetDeletePrivate(false);
++        ignore_value(virOnce(&createdOnce, networkSetupPrivateChains));
++
++        /*
++         * If this is initial startup, and we just created the
++         * top level private chains we either
++         *
++         *   - upgraded from old libvirt
++         *   - freshly booted from clean state
++         *
++         * In the first case we must delete the old rules from
++         * the built-in chains, instead of our new private chains.
++         * In the second case it doesn't matter, since no existing
++         * rules will be present. Thus we can safely just tell it
++         * to always delete from the builin chain
++         */
++        if (startup && createdChains) {
++            VIR_DEBUG("Requesting cleanup of legacy firewall rules");
++            iptablesSetDeletePrivate(false);
++        }
+     }
+ }
+ 
+diff --git a/src/network/bridge_driver_nop.c b/src/network/bridge_driver_nop.c
+index ec7b1ed8b7..74a9b87158 100644
+--- a/src/network/bridge_driver_nop.c
++++ b/src/network/bridge_driver_nop.c
+@@ -20,7 +20,8 @@
+ #include <config.h>
+ 
+ void networkPreReloadFirewallRules(virNetworkDriverStatePtr driver ATTRIBUTE_UNUSED,
+-                                   bool startup ATTRIBUTE_UNUSED)
++                                   bool startup ATTRIBUTE_UNUSED,
++                                   bool force ATTRIBUTE_UNUSED)
+ {
+ }
+ 
+diff --git a/src/network/bridge_driver_platform.h b/src/network/bridge_driver_platform.h
+index 169417a6c0..48ab52c160 100644
+--- a/src/network/bridge_driver_platform.h
++++ b/src/network/bridge_driver_platform.h
+@@ -62,7 +62,7 @@ struct _virNetworkDriverState {
+ typedef struct _virNetworkDriverState virNetworkDriverState;
+ typedef virNetworkDriverState *virNetworkDriverStatePtr;
+ 
+-void networkPreReloadFirewallRules(virNetworkDriverStatePtr driver, bool startup);
++void networkPreReloadFirewallRules(virNetworkDriverStatePtr driver, bool startup, bool force);
+ void networkPostReloadFirewallRules(bool startup);
+ 
+ int networkCheckRouteCollision(virNetworkDefPtr def);

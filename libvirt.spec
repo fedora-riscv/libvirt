@@ -218,7 +218,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 5.6.0
-Release: 6%{?dist}
+Release: 7%{?dist}
 License: LGPLv2+
 URL: https://libvirt.org/
 
@@ -276,6 +276,20 @@ Patch0121: 0121-virhostuptime-Add-linux-stub-for-musl.patch
 Patch0122: 0122-virhostuptime-Wrap-virHostGetBootTimeProcfs-call-in-.patch
 Patch0123: 0123-virhostuptime-Introduce-virHostBootTimeInit.patch
 Patch0124: 0124-remote_daemon-Initialize-host-boot-time-global-varia.patch
+# Fix iptables No chain/target/match by that name (bz #1813830)
+Patch0125: 0125-network-make-it-safe-to-call-networkSetupPrivateChai.patch
+Patch0126: 0126-network-force-re-creation-of-iptables-private-chains.patch
+# systemd: start libvirtd after firewalld/iptables services (bz #1697636)
+Patch0127: 0127-systemd-start-libvirtd-after-firewalld-iptables-serv.patch
+# CVE-2020-12430: memory leak in domstats may allow read-only user to
+# perform DoS attack (bz #1828216, bz #1828190)
+Patch0128: 0128-qemuDomainGetStatsIOThread-Don-t-leak-array-with-0-i.patch
+# CVE-2020-10703: Potential denial of service via active pool without target
+# path (bz #1820690, bz #1816650)
+Patch0129: 0129-storage-Fix-daemon-crash-on-lookup-storagepool-by-ta.patch
+# CVE-2019-20485: potential DoS by holding a monitor job while querying QEMU
+# guest-agent (bz #1809741, bz #1809740)
+Patch0130: 0130-qemu-don-t-hold-both-jobs-for-suspend.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-config-network = %{version}-%{release}
@@ -1940,6 +1954,16 @@ exit 0
 
 
 %changelog
+* Wed May 27 2020 Cole Robinson <crobinso@redhat.com> - 5.6.0-7
+- Fix iptables No chain/target/match by that name (bz #1813830)
+- systemd: start libvirtd after firewalld/iptables services (bz #1697636)
+- CVE-2020-12430: memory leak in domstats may allow read-only user to
+  perform DoS attack (bz #1828216, bz #1828190)
+- CVE-2020-10703: Potential denial of service via active pool without target
+  path (bz #1820690, bz #1816650)
+- CVE-2019-20485: potential DoS by holding a monitor job while querying QEMU
+  guest-agent (bz #1809741, bz #1809740)
+
 * Tue Apr 07 2020 Cole Robinson <crobinso@redhat.com> - 5.6.0-6
 - Fix issues with uptime detection (bz #1783715)
 

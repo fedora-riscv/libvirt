@@ -1,0 +1,55 @@
+From: Laine Stump <laine@redhat.com>
+Date: Thu, 7 May 2020 22:32:59 -0400
+Subject: [PATCH] network: make it safe to call networkSetupPrivateChains()
+ multiple times
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+networkSetupPrivateChains() is currently called only once per run of
+libvirtd, so it can assume that errInitV4 and errInitV6 are empty/null
+when it is called. In preparation for potentially calling this
+function multiple times during one run, this patch moves the reset of
+errInitV[46] to the top of the function, to assure no memory is
+leaked.
+
+Signed-off-by: Laine Stump <laine@redhat.com>
+Reviewed-by: Daniel P. Berrangé <berrange@redhat.com>
+(cherry picked from commit de110f110fb917a31b9f33ad8e4b3c1d3284766a)
+---
+ src/network/bridge_driver_linux.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/src/network/bridge_driver_linux.c b/src/network/bridge_driver_linux.c
+index 35459c10d1..f4e4e2df76 100644
+--- a/src/network/bridge_driver_linux.c
++++ b/src/network/bridge_driver_linux.c
+@@ -48,6 +48,10 @@ static void networkSetupPrivateChains(void)
+     VIR_DEBUG("Setting up global firewall chains");
+ 
+     createdChains = false;
++    virFreeError(errInitV4);
++    errInitV4 = NULL;
++    virFreeError(errInitV6);
++    errInitV6 = NULL;
+ 
+     rc = iptablesSetupPrivateChains(VIR_FIREWALL_LAYER_IPV4);
+     if (rc < 0) {
+@@ -56,8 +60,6 @@ static void networkSetupPrivateChains(void)
+         errInitV4 = virSaveLastError();
+         virResetLastError();
+     } else {
+-        virFreeError(errInitV4);
+-        errInitV4 = NULL;
+         if (rc) {
+             VIR_DEBUG("Created global IPv4 chains");
+             createdChains = true;
+@@ -73,8 +75,6 @@ static void networkSetupPrivateChains(void)
+         errInitV6 = virSaveLastError();
+         virResetLastError();
+     } else {
+-        virFreeError(errInitV6);
+-        errInitV6 = NULL;
+         if (rc) {
+             VIR_DEBUG("Created global IPv6 chains");
+             createdChains = true;
