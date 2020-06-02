@@ -1,0 +1,43 @@
+From: Jim Fehlig <jfehlig@suse.com>
+Date: Fri, 3 Apr 2020 15:51:48 -0600
+Subject: [PATCH] libxl: fix crash when initializing driver
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Commit 54a401af478 split out DriverConfigInit from DriverConfigNew, but
+then called it a bit late from libxlStateInitialize. The cfg is used in
+libxlDriverConfigLoadFile and when uninitialized results in a crash.
+Calling DriverConfigInit immediately after DriverConfigNew fixes the
+crash.
+
+Signed-off-by: Jim Fehlig <jfehlig@suse.com>
+Reviewed-by: Erik Skultety <eskultet@redhat.com>
+Reviewed-by: Ján Tomko <jtomko@redhat.com>
+(cherry picked from commit 88011ed280c4f946a7b8e7ffcea2335eb075de60)
+---
+ src/libxl/libxl_driver.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/src/libxl/libxl_driver.c b/src/libxl/libxl_driver.c
+index f2387e2a20..c4fb791fa0 100644
+--- a/src/libxl/libxl_driver.c
++++ b/src/libxl/libxl_driver.c
+@@ -703,14 +703,14 @@ libxlStateInitialize(bool privileged,
+     if (!(cfg = libxlDriverConfigNew()))
+         goto error;
+ 
++    if (libxlDriverConfigInit(cfg) < 0)
++        goto error;
++
+     driverConf = g_strdup_printf("%s/libxl.conf", cfg->configBaseDir);
+ 
+     if (libxlDriverConfigLoadFile(cfg, driverConf) < 0)
+         goto error;
+ 
+-    if (libxlDriverConfigInit(cfg) < 0)
+-        goto error;
+-
+     /* Register the callbacks providing access to libvirt's event loop */
+     libxl_osevent_register_hooks(cfg->ctx, &libxl_osevent_callbacks, cfg->ctx);
+ 

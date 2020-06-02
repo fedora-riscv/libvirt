@@ -218,7 +218,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 6.1.0
-Release: 3%{?dist}
+Release: 4%{?dist}
 License: LGPLv2+
 URL: https://libvirt.org/
 
@@ -234,6 +234,8 @@ Patch0002: 0002-network-make-it-safe-to-call-networkSetupPrivateChai.patch
 Patch0003: 0003-network-force-re-creation-of-iptables-private-chains.patch
 # systemd: start libvirtd after firewalld/iptables services (bz #1697636)
 Patch0004: 0004-systemd-start-libvirtd-after-firewalld-iptables-serv.patch
+# Fix libxl driver startup crash (bz #1842318)
+Patch0005: 0005-libxl-fix-crash-when-initializing-driver.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-config-network = %{version}-%{release}
@@ -1981,6 +1983,9 @@ exit 0
 
 
 %changelog
+* Tue Jun 02 2020 Cole Robinson <crobinso@redhat.com> - 6.1.0-4
+- Fix libxl driver startup crash (bz #1842318)
+
 * Tue May 26 2020 Cole Robinson <crobinso@redhat.com> - 6.1.0-3
 - Fix iptables No chain/target/match by that name (bz #1813830)
 - systemd: start libvirtd after firewalld/iptables services (bz #1697636)
