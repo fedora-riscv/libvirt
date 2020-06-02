@@ -217,7 +217,7 @@
 
 Summary: Library providing a simple virtualization API
 Name: libvirt
-Version: 6.3.0
+Version: 6.4.0
 Release: 1%{?dist}
 License: LGPLv2+
 URL: https://libvirt.org/
@@ -1984,6 +1984,9 @@ exit 0
 
 
 %changelog
+* Tue Jun 02 2020 Cole Robinson <crobinso@redhat.com> - 6.4.0-1
+- Update to version 6.4.0
+
 * Tue May 05 2020 Cole Robinson <crobinso@redhat.com> - 6.3.0-1
 - Update to version 6.3.0
 
