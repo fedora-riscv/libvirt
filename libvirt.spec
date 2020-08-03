@@ -998,6 +998,9 @@ Libvirt plugin for NSS for translating domain names into IP addresses.
 %autosetup -S git_am
 
 %build
+# Disable LTO since it caused test failures by breaking LD_PRELOAD usage.
+%define _lto_cflags %{nil}
+
 %if ! %{supported_platform}
 echo "This RPM requires either Fedora >= %{min_fedora} or RHEL >= %{min_rhel}"
 exit 1
