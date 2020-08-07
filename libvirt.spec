@@ -1001,6 +1001,8 @@ Libvirt plugin for NSS for translating domain names into IP addresses.
 
 %build
 # Disable LTO since it caused test failures by breaking LD_PRELOAD usage.
+# Upstream libvirt changed to meson and appears to succeed with LTO, so
+# remove this when rebasing to libvirt 6.7.0 or newer
 %define _lto_cflags %{nil}
 
 %if ! %{supported_platform}
