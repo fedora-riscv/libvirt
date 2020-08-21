@@ -218,7 +218,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 6.6.0
-Release: 1%{?dist}
+Release: 2%{?dist}
 License: LGPLv2+
 URL: https://libvirt.org/
 
@@ -226,6 +226,7 @@ URL: https://libvirt.org/
     %define mainturl stable_updates/
 %endif
 Source: https://libvirt.org/sources/%{?mainturl}libvirt-%{version}.tar.xz
+Patch1: 0001-util-Fix-logic-in-virFileSetCOW.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-config-network = %{version}-%{release}
@@ -1994,6 +1995,9 @@ exit 0
 
 
 %changelog
+* Fri Aug 21 2020 Daniel P. Berrangé <berrange@redhat.com> - 6.6.0-2
+- Fix creation of pools on non-btrfs (rhbz#1870197)
+
 * Tue Aug 04 2020 Cole Robinson <crobinso@redhat.com> - 6.6.0-1
 - Update to version 6.6.0
 
