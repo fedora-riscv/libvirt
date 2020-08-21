@@ -122,11 +122,9 @@
     %define with_storage_zfs 0
 %endif
 
-# Ceph dropping support for 32-bit hosts
-%if 0%{?fedora} >= 30
-    %ifarch %{arm} %{ix86}
-        %define with_storage_rbd 0
-    %endif
+# Ceph does not support 32-bit hosts
+%ifarch %{arm} %{ix86}
+    %define with_storage_rbd 0
 %endif
 
 # RHEL doesn't ship OpenVZ, VBox, PowerHypervisor,
@@ -218,7 +216,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 6.6.0
-Release: 2%{?dist}
+Release: 3%{?dist}
 License: LGPLv2+
 URL: https://libvirt.org/
 
@@ -227,6 +225,13 @@ URL: https://libvirt.org/
 %endif
 Source: https://libvirt.org/sources/%{?mainturl}libvirt-%{version}.tar.xz
 Patch1: 0001-util-Fix-logic-in-virFileSetCOW.patch
+# Upstream patches to fix GCC 10 warnings
+# https://gitlab.com/libvirt/libvirt/-/commit/d96d359a032cda609f9adf3caafdf8425d8aa4ac
+Patch2: libvirt-6.6.0-qemu-avoid-maybe-uninitialized-warning-by-GCC-10.patch
+# https://gitlab.com/libvirt/libvirt/-/commit/e2bd2af6e4f9323cf732563b430ef02e075fc804
+Patch3: libvirt-6.6.0-tools-avoid-potential-null-pointer-dereference-by-GCC-10.patch
+# https://gitlab.com/libvirt/libvirt/-/commit/ae8a83c35378d8d3eac2e41b3a10cac0e587ce54
+Patch4: libvirt-6.6.0-storage-avoid-maybe-uninitialized-warning-by-GCC-10.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-config-network = %{version}-%{release}
@@ -1995,6 +2000,10 @@ exit 0
 
 
 %changelog
+* Fri Aug 21 2020 Merlin Mathesius <mmathesi@redhat.com> - 6.6.0-3
+- Fix so no platforms depend upon ceph for 32-bit architectures
+- Include upstream patches to fix GCC 10 warnings
+
 * Fri Aug 21 2020 Daniel P. Berrangé <berrange@redhat.com> - 6.6.0-2
 - Fix creation of pools on non-btrfs (rhbz#1870197)
 

@@ -1,0 +1,40 @@
+From e2bd2af6e4f9323cf732563b430ef02e075fc804 Mon Sep 17 00:00:00 2001
+From: Boris Fiuczynski <fiuczy@linux.ibm.com>
+Date: Thu, 13 Aug 2020 16:03:45 +0200
+Subject: [PATCH] tools: avoid potential null pointer dereference by GCC 10
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+GCC 10 complains about "arg" possibly being a NULL dereference.
+Even though it might be a false positive, we can easily avoid it.
+
+Avoiding
+ ../tools/vsh.c: In function ‘vshCommandOptStringReq’:
+ ../tools/vsh.c:1034:19: error: potential null pointer dereference [-Werror=null-dereference]
+  1034 |     else if (!*arg->data && !(arg->def->flags & VSH_OFLAG_EMPTY_OK))
+       |                ~~~^~~~~~
+
+Signed-off-by: Boris Fiuczynski <fiuczy@linux.ibm.com>
+Reviewed-by: Marc Hartmayer <mhartmay@linux.ibm.com>
+Reviewed-by: Erik Skultety <eskultet@redhat.com>
+---
+ tools/vsh.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/tools/vsh.c b/tools/vsh.c
+index 5e2e3ac219..11f493f969 100644
+--- a/tools/vsh.c
++++ b/tools/vsh.c
+@@ -1031,7 +1031,7 @@ vshCommandOptStringReq(vshControl *ctl,
+     /* this should not be propagated here, just to be sure */
+     if (ret == -1)
+         error = N_("Mandatory option not present");
+-    else if (!*arg->data && !(arg->def->flags & VSH_OFLAG_EMPTY_OK))
++    else if (arg && !*arg->data && !(arg->def->flags & VSH_OFLAG_EMPTY_OK))
+         error = N_("Option argument is empty");
+ 
+     if (error) {
+-- 
+GitLab
+
