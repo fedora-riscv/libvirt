@@ -211,7 +211,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 6.7.0
-Release: 1%{?dist}
+Release: 2%{?dist}
 License: LGPLv2+
 URL: https://libvirt.org/
 
@@ -219,6 +219,7 @@ URL: https://libvirt.org/
     %define mainturl stable_updates/
 %endif
 Source: https://libvirt.org/sources/%{?mainturl}libvirt-%{version}.tar.xz
+Patch1: 0001-qemu_namespace-Be-tolerant-to-non-existent-files-whe.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-config-network = %{version}-%{release}
@@ -1964,6 +1965,9 @@ exit 0
 
 
 %changelog
+* Fri Sep  4 2020 Daniel P. Berrangé <berrange@redhat.com> - 6.7.0-2
+- Fix QEMU start when KVM is not loaded (rhbz#1875327)
+
 * Tue Sep 01 2020 Cole Robinson <crobinso@redhat.com> - 6.7.0-1
 - Update to version 6.7.0
 
