@@ -32,7 +32,7 @@
 %endif
 
 # On RHEL 7 and older macro _vpath_builddir is not defined.
-%if 0%{?rhel} <= 7
+%if 0%{?rhel} && 0%{?rhel} <= 7
     %define _vpath_builddir %{_target_platform}
 %endif
 
@@ -210,8 +210,8 @@
 
 Summary: Library providing a simple virtualization API
 Name: libvirt
-Version: 6.7.0
-Release: 2%{?dist}
+Version: 6.8.0
+Release: 1%{?dist}
 License: LGPLv2+
 URL: https://libvirt.org/
 
@@ -219,7 +219,6 @@ URL: https://libvirt.org/
     %define mainturl stable_updates/
 %endif
 Source: https://libvirt.org/sources/%{?mainturl}libvirt-%{version}.tar.xz
-Patch1: 0001-qemu_namespace-Be-tolerant-to-non-existent-files-whe.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-config-network = %{version}-%{release}
@@ -374,9 +373,6 @@ BuildRequires: systemtap-sdt-devel
 BuildRequires: util-linux
 # For showmount in FS driver (netfs discovery)
 BuildRequires: nfs-utils
-
-# Communication with the firewall and polkit daemons use DBus
-BuildRequires: dbus-devel
 
 # Fedora build root suckage
 BuildRequires: gawk
@@ -892,7 +888,6 @@ capabilities of VirtualBox
 %package client
 Summary: Client side utilities of the libvirt library
 Requires: %{name}-libs = %{version}-%{release}
-Requires: readline
 # Needed by /usr/libexec/libvirt-guests.sh script.
 Requires: gettext
 # Needed by virt-pki-validate script.
@@ -919,7 +914,6 @@ Shared libraries for accessing the libvirt daemon.
 %package admin
 Summary: Set of tools to control libvirt daemon
 Requires: %{name}-libs = %{version}-%{release}
-Requires: readline
 %if %{with_bash_completion}
 Requires: %{name}-bash-completion = %{version}-%{release}
 %endif
@@ -1169,7 +1163,6 @@ export SOURCE_DATE_EPOCH=$(stat --printf='%Y' %{_specdir}/%{name}.spec)
            %{?arg_selinux_mount} \
            -Dapparmor=disabled \
            -Dsecdriver_apparmor=disabled \
-           -Dhal=disabled \
            -Dudev=enabled \
            -Dyajl=enabled \
            %{?arg_sanlock} \
@@ -1486,7 +1479,7 @@ exit 0
 %files
 
 %files docs
-%doc AUTHORS NEWS.rst README.rst
+%doc AUTHORS.rst NEWS.rst README.rst
 %doc libvirt-docs/*
 
 %files daemon
@@ -1559,6 +1552,8 @@ exit 0
 %dir %attr(0700, root, root) %{_localstatedir}/log/libvirt/
 
 %attr(0755, root, root) %{_libexecdir}/libvirt_iohelper
+
+%attr(0755, root, root) %{_bindir}/virt-ssh-helper
 
 %attr(0755, root, root) %{_sbindir}/libvirtd
 %attr(0755, root, root) %{_sbindir}/virtproxyd
@@ -1965,6 +1960,9 @@ exit 0
 
 
 %changelog
+* Thu Oct 01 2020 Cole Robinson <crobinso@redhat.com> - 6.8.0-1
+- Update to version 6.8.0
+
 * Fri Sep  4 2020 Daniel P. Berrangé <berrange@redhat.com> - 6.7.0-2
 - Fix QEMU start when KVM is not loaded (rhbz#1875327)
 
