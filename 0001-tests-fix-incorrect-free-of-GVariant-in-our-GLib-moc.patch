@@ -1,0 +1,90 @@
+From 48622bb5637587a1cc24f7fdc8ab32cd89798a9d Mon Sep 17 00:00:00 2001
+Message-Id: <48622bb5637587a1cc24f7fdc8ab32cd89798a9d.1601670767.git.crobinso@redhat.com>
+From: Pavel Hrdina <phrdina@redhat.com>
+Date: Fri, 2 Oct 2020 12:11:45 +0200
+Subject: [PATCH] tests: fix incorrect free of GVariant in our GLib mock
+ functions
+
+GLib implementation of g_dbus_connection_call_sync() calls
+g_variant_ref_sink() on the passed @parameters to make sure they have
+proper reference. If the original reference is floating the
+g_dbus_connection_call_sync() consumes it, but if it's normal reference
+it will just add another one.
+
+Our mock functions were only freeing the @parameters which is incorrect
+and doesn't reflect how the real implementation works.
+
+Reported-by: Cole Robinson <crobinso@redhat.com>
+Signed-off-by: Pavel Hrdina <phrdina@redhat.com>
+Reviewed-by: Michal Privoznik <mprivozn@redhat.com>
+Signed-off-by: Cole Robinson <crobinso@redhat.com>
+---
+ tests/networkxml2firewalltest.c | 4 +++-
+ tests/virfirewalltest.c         | 3 +++
+ tests/virpolkittest.c           | 3 +++
+ tests/virsystemdtest.c          | 4 +++-
+ 4 files changed, 12 insertions(+), 2 deletions(-)
+
+diff --git a/tests/networkxml2firewalltest.c b/tests/networkxml2firewalltest.c
+index e0244f508e..3496445f0d 100644
+--- a/tests/networkxml2firewalltest.c
++++ b/tests/networkxml2firewalltest.c
+@@ -60,8 +60,10 @@ VIR_MOCK_WRAP_RET_ARGS(g_dbus_connection_call_sync,
+                        GCancellable *, cancellable,
+                        GError **, error)
+ {
+-    if (parameters)
++    if (parameters) {
++        g_variant_ref_sink(parameters);
+         g_variant_unref(parameters);
++    }
+ 
+     VIR_MOCK_REAL_INIT(g_dbus_connection_call_sync);
+ 
+diff --git a/tests/virfirewalltest.c b/tests/virfirewalltest.c
+index 607638e9d0..646b999d96 100644
+--- a/tests/virfirewalltest.c
++++ b/tests/virfirewalltest.c
+@@ -79,6 +79,9 @@ VIR_MOCK_WRAP_RET_ARGS(g_dbus_connection_call_sync,
+     GVariant *reply = NULL;
+     g_autoptr(GVariant) params = parameters;
+ 
++    if (params)
++        g_variant_ref_sink(params);
++
+     VIR_MOCK_REAL_INIT(g_dbus_connection_call_sync);
+ 
+     if (STREQ(bus_name, "org.freedesktop.DBus") &&
+diff --git a/tests/virpolkittest.c b/tests/virpolkittest.c
+index 011d83a506..b7cbe28466 100644
+--- a/tests/virpolkittest.c
++++ b/tests/virpolkittest.c
+@@ -52,6 +52,9 @@ VIR_MOCK_WRAP_RET_ARGS(g_dbus_connection_call_sync,
+     GVariant *reply = NULL;
+     g_autoptr(GVariant) params = parameters;
+ 
++    if (params)
++        g_variant_ref_sink(params);
++
+     VIR_MOCK_REAL_INIT(g_dbus_connection_call_sync);
+ 
+     if (STREQ(bus_name, "org.freedesktop.PolicyKit1") &&
+diff --git a/tests/virsystemdtest.c b/tests/virsystemdtest.c
+index c1411d7c05..bd0ca51140 100644
+--- a/tests/virsystemdtest.c
++++ b/tests/virsystemdtest.c
+@@ -54,8 +54,10 @@ VIR_MOCK_WRAP_RET_ARGS(g_dbus_connection_call_sync,
+ {
+     GVariant *reply = NULL;
+ 
+-    if (parameters)
++    if (parameters) {
++        g_variant_ref_sink(parameters);
+         g_variant_unref(parameters);
++    }
+ 
+     VIR_MOCK_REAL_INIT(g_dbus_connection_call_sync);
+ 
+-- 
+2.28.0
+

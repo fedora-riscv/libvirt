@@ -219,6 +219,8 @@ URL: https://libvirt.org/
     %define mainturl stable_updates/
 %endif
 Source: https://libvirt.org/sources/%{?mainturl}libvirt-%{version}.tar.xz
+# Fix glib errors in virsystemdtest
+Patch0001: 0001-tests-fix-incorrect-free-of-GVariant-in-our-GLib-moc.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-config-network = %{version}-%{release}
