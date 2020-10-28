@@ -93,7 +93,6 @@
 %define with_libssh2       0%{!?_without_libssh2:0}
 %define with_wireshark     0%{!?_without_wireshark:0}
 %define with_libssh        0%{!?_without_libssh:0}
-%define with_bash_completion  0%{!?_without_bash_completion:0}
 
 # Finally set the OS / architecture specific special cases
 
@@ -177,8 +176,6 @@
     %define with_libssh 0%{!?_without_libssh:1}
 %endif
 
-%define with_bash_completion  0%{!?_without_bash_completion:1}
-
 %if %{with_qemu} || %{with_lxc}
 # numad is used to manage the CPU and memory placement dynamically,
 # it's not available on many non-x86 architectures.
@@ -211,7 +208,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 6.8.0
-Release: 1%{?dist}
+Release: 2%{?dist}
 License: LGPLv2+
 URL: https://libvirt.org/
 
@@ -277,9 +274,7 @@ BuildRequires: glib2-devel >= 2.48
 BuildRequires: libxml2-devel
 BuildRequires: libxslt
 BuildRequires: readline-devel
-%if %{with_bash_completion}
 BuildRequires: bash-completion >= 2.0
-%endif
 BuildRequires: gettext
 BuildRequires: libtasn1-devel
 BuildRequires: gnutls-devel
@@ -894,9 +889,7 @@ Requires: %{name}-libs = %{version}-%{release}
 Requires: gettext
 # Needed by virt-pki-validate script.
 Requires: gnutls-utils
-%if %{with_bash_completion}
 Requires: %{name}-bash-completion = %{version}-%{release}
-%endif
 
 %description client
 The client binaries needed to access the virtualization
@@ -916,20 +909,16 @@ Shared libraries for accessing the libvirt daemon.
 %package admin
 Summary: Set of tools to control libvirt daemon
 Requires: %{name}-libs = %{version}-%{release}
-%if %{with_bash_completion}
 Requires: %{name}-bash-completion = %{version}-%{release}
-%endif
 
 %description admin
 The client side utilities to control the libvirt daemon.
 
-%if %{with_bash_completion}
 %package bash-completion
 Summary: Bash completion script
 
 %description bash-completion
 Bash completion script stub.
-%endif
 
 %if %{with_wireshark}
 %package wireshark
@@ -1114,6 +1103,18 @@ exit 1
     %define arg_storage_iscsi_direct -Dstorage_iscsi_direct=disabled
 %endif
 
+%if %{with_libssh}
+    %define arg_libssh -Dlibssh=enabled
+%else
+    %define arg_libssh -Dlibssh=disabled
+%endif
+
+%if %{with_libssh2}
+    %define arg_libssh2 -Dlibssh2=enabled
+%else
+    %define arg_libssh2 -Dlibssh2=disabled
+%endif
+
 %define when  %(date +"%%F-%%T")
 %define where %(hostname)
 %define who   %{?packager}%{!?packager:Unknown}
@@ -1175,6 +1176,8 @@ export SOURCE_DATE_EPOCH=$(stat --printf='%Y' %{_specdir}/%{name}.spec)
            %{?arg_firewalld} \
            %{?arg_firewalld_zone} \
            %{?arg_wireshark} \
+           %{?arg_libssh} \
+           %{?arg_libssh2} \
            -Dpm_utils=disabled \
            -Dnss=enabled \
            %{arg_packager} \
@@ -1848,9 +1851,7 @@ exit 0
 %{_datadir}/systemtap/tapset/libvirt_qemu_probes*.stp
 %endif
 
-%if %{with_bash_completion}
 %{_datadir}/bash-completion/completions/virsh
-%endif
 
 
 %{_unitdir}/libvirt-guests.service
@@ -1899,14 +1900,10 @@ exit 0
 %files admin
 %{_mandir}/man1/virt-admin.1*
 %{_bindir}/virt-admin
-%if %{with_bash_completion}
 %{_datadir}/bash-completion/completions/virt-admin
-%endif
 
-%if %{with_bash_completion}
 %files bash-completion
 %{_datadir}/bash-completion/completions/vsh
-%endif
 
 %if %{with_wireshark}
 %files wireshark
@@ -1962,6 +1959,10 @@ exit 0
 
 
 %changelog
+* Wed Oct 28 2020 Daniel P. Berrangé <berrange@redhat.com> - 6.8.0-2
+- Remove obsolete bash_completion conditional
+- Pass args to meson based on with_libssh/with_libssh2
+
 * Thu Oct 01 2020 Cole Robinson <crobinso@redhat.com> - 6.8.0-1
 - Update to version 6.8.0
 
