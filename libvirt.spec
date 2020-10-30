@@ -208,7 +208,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 6.8.0
-Release: 2%{?dist}
+Release: 3%{?dist}
 License: LGPLv2+
 URL: https://libvirt.org/
 
@@ -218,6 +218,10 @@ URL: https://libvirt.org/
 Source: https://libvirt.org/sources/%{?mainturl}libvirt-%{version}.tar.xz
 # Fix glib errors in virsystemdtest
 Patch0001: 0001-tests-fix-incorrect-free-of-GVariant-in-our-GLib-moc.patch
+# Fix glibc incompatibility in stat() mocking
+Patch0002: 0002-tests-Fix-lstat-mock-initialization-on-macOS.patch
+Patch0003: 0003-tests-Re-introduce-stat-lstat-mocks-on-macOS.patch
+Patch0004: 0004-tests-fix-stat-mocking-with-Fedora-rawhide.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-config-network = %{version}-%{release}
@@ -1959,6 +1963,9 @@ exit 0
 
 
 %changelog
+* Fri Oct 30 2020 Daniel P. Berrangé <berrange@redhat.com> - 6.8.0-3
+- Fix stat() mocking for new glibc
+
 * Wed Oct 28 2020 Daniel P. Berrangé <berrange@redhat.com> - 6.8.0-2
 - Remove obsolete bash_completion conditional
 - Pass args to meson based on with_libssh/with_libssh2

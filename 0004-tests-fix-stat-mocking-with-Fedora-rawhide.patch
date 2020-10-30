@@ -1,0 +1,191 @@
+From 2b93bcc7e84dfae34b16fd687b8c3d35fa0c54be Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Daniel=20P=2E=20Berrang=C3=A9?= <berrange@redhat.com>
+Date: Thu, 29 Oct 2020 17:25:07 +0000
+Subject: [PATCH 3/3] tests: fix stat mocking with Fedora rawhide
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+GLibC has a really complicated way of dealing with the 'stat' function
+historically, which means our mocks in turn have to look at four
+different possible functions to replace, stat, stat64, __xstat,
+__xstat64.
+
+In Fedora 33 and earlier:
+
+ - libvirt.so links to __xstat64
+ - libc.so library exports stat, stat64, __xstat, __xstat64
+ - sys/stat.h header exposes stat and __xstat
+
+In Fedora 34 rawhide:
+
+ - libvirt.so links to stat64
+ - libc.so library exports stat, stat64, __xstat, __xstat64
+ - sys/stat.h header exposes stat
+
+Historically we only looked at the exported symbols from libc.so to
+decide which to mock.
+
+In F34 though we must not consider __xstat / __xstat64 though because
+they only existance for binary compatibility. Newly built binaries
+won't reference them.
+
+Thus we must introduce a header file check into our logic for deciding
+which symbol to mock. We must ignore the __xstat / __xstat64 symbols
+if they don't appear in the sys/stat.h header, even if they appear
+in libc.so
+
+Signed-off-by: Daniel P. Berrangé <berrange@redhat.com>
+Reviewed-by: Michal Privoznik <mprivozn@redhat.com>
+---
+ meson.build                | 28 ++++++++++++-----
+ tests/virmockstathelpers.c | 62 ++++++++++++++++++++++----------------
+ 2 files changed, 56 insertions(+), 34 deletions(-)
+
+diff --git a/meson.build b/meson.build
+index 2e57a435df..87b4aaf9aa 100644
+--- a/meson.build
++++ b/meson.build
+@@ -636,10 +636,6 @@ libvirt_export_dynamic = cc.first_supported_link_argument([
+ # check availability of various common functions (non-fatal if missing)
+ 
+ functions = [
+-  '__lxstat',
+-  '__lxstat64',
+-  '__xstat',
+-  '__xstat64',
+   'elf_aux_info',
+   'fallocate',
+   'getauxval',
+@@ -653,8 +649,6 @@ functions = [
+   'getuid',
+   'getutxid',
+   'if_indextoname',
+-  'lstat',
+-  'lstat64',
+   'mmap',
+   'newlocale',
+   'pipe2',
+@@ -666,12 +660,23 @@ functions = [
+   'setgroups',
+   'setns',
+   'setrlimit',
+-  'stat',
+-  'stat64',
+   'symlink',
+   'sysctlbyname',
+ ]
+ 
++stat_functions = [
++  '__lxstat',
++  '__lxstat64',
++  '__xstat',
++  '__xstat64',
++  'lstat',
++  'lstat64',
++  'stat',
++  'stat64',
++]
++
++functions += stat_functions
++
+ foreach function : functions
+   if cc.has_function(function)
+     conf.set('WITH_@0@'.format(function.to_upper()), 1)
+@@ -679,6 +684,13 @@ foreach function : functions
+ endforeach
+ 
+ 
++foreach function : stat_functions
++  if cc.has_header_symbol('sys/stat.h', function)
++    conf.set('WITH_@0@_DECL'.format(function.to_upper()), 1)
++  endif
++endforeach
++
++
+ # various header checks
+ 
+ headers = [
+diff --git a/tests/virmockstathelpers.c b/tests/virmockstathelpers.c
+index 5a71de24e9..ebe357aa49 100644
+--- a/tests/virmockstathelpers.c
++++ b/tests/virmockstathelpers.c
+@@ -67,39 +67,49 @@
+  *  - If __xstat & __xstat64 exist, then stat & stat64 will not exist
+  *    as symbols in the library, so the latter should not be mocked.
+  *
++ *  - If __xstat exists in the library, but not the header than it
++ *    it is just there for binary back compat and should not be
++ *    mocked
++ *
+  * The same all applies to lstat()
+  */
+ 
+ 
++#if !defined(WITH___XSTAT_DECL)
++# if defined(WITH_STAT)
++#  if !defined(WITH___XSTAT) && !defined(WITH_STAT64) || defined(__APPLE__)
++#   define MOCK_STAT
++#  endif
++# endif
++# if defined(WITH_STAT64)
++#  define MOCK_STAT64
++# endif
++#else /* WITH___XSTAT_DECL */
++# if defined(WITH___XSTAT) && !defined(WITH___XSTAT64)
++#  define MOCK___XSTAT
++# endif
++# if defined(WITH___XSTAT64)
++#  define MOCK___XSTAT64
++# endif
++#endif /* WITH___XSTAT_DECL */
+ 
+-#if defined(WITH_STAT)
+-# if !defined(WITH___XSTAT) && !defined(WITH_STAT64) || defined(__APPLE__)
+-#  define MOCK_STAT
++#if !defined(WITH___LXSTAT_DECL)
++# if defined(WITH_LSTAT)
++#  if !defined(WITH___LXSTAT) && !defined(WITH_LSTAT64) || defined(__APPLE__)
++#   define MOCK_LSTAT
++#  endif
+ # endif
+-#endif
+-#if defined(WITH_STAT64) && !defined(WITH___XSTAT64)
+-# define MOCK_STAT64
+-#endif
+-#if defined(WITH___XSTAT) && !defined(WITH___XSTAT64)
+-# define MOCK___XSTAT
+-#endif
+-#if defined(WITH___XSTAT64)
+-# define MOCK___XSTAT64
+-#endif
+-#if defined(WITH_LSTAT)
+-# if !defined(WITH___LXSTAT) && !defined(WITH_LSTAT64) || defined(__APPLE__)
+-#  define MOCK_LSTAT
++# if defined(WITH_LSTAT64)
++#  define MOCK_LSTAT64
+ # endif
+-#endif
+-#if defined(WITH_LSTAT64) && !defined(WITH___LXSTAT64)
+-# define MOCK_LSTAT64
+-#endif
+-#if defined(WITH___LXSTAT) && !defined(WITH___LXSTAT64)
+-# define MOCK___LXSTAT
+-#endif
+-#if defined(WITH___LXSTAT64)
+-# define MOCK___LXSTAT64
+-#endif
++#else /* WITH___LXSTAT_DECL */
++# if defined(WITH___LXSTAT) && !defined(WITH___LXSTAT64)
++#  define MOCK___LXSTAT
++# endif
++# if defined(WITH___LXSTAT64)
++#  define MOCK___LXSTAT64
++# endif
++#endif /* WITH___LXSTAT_DECL */
+ 
+ #ifdef MOCK_STAT
+ static int (*real_stat)(const char *path, struct stat *sb);
+-- 
+2.28.0
+
