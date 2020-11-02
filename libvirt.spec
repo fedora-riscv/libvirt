@@ -208,7 +208,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 6.8.0
-Release: 3%{?dist}
+Release: 4%{?dist}
 License: LGPLv2+
 URL: https://libvirt.org/
 
@@ -1048,9 +1048,9 @@ exit 1
 %endif
 
 %if %{with_storage_gluster}
-    %define arg_storage_gluster -Dstorage_gluster=enabled
+    %define arg_storage_gluster -Dstorage_glusterfs=enabled
 %else
-    %define arg_storage_gluster -Dstorage_gluster=disabled
+    %define arg_storage_gluster -Dstorage_glusterfs=disabled
 %endif
 
 %if %{with_storage_zfs}
@@ -1963,6 +1963,9 @@ exit 0
 
 
 %changelog
+* Mon Nov  2 2020 Daniel P. Berrangé <berrange@redhat.com> - 6.8.0-4
+- Fix name of meson option for disabling glusterfs
+
 * Fri Oct 30 2020 Daniel P. Berrangé <berrange@redhat.com> - 6.8.0-3
 - Fix stat() mocking for new glibc
 
