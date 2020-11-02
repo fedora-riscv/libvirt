@@ -208,7 +208,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 6.8.0
-Release: 4%{?dist}
+Release: 5%{?dist}
 License: LGPLv2+
 URL: https://libvirt.org/
 
@@ -1018,15 +1018,15 @@ exit 1
 %endif
 
 %if %{with_esx}
-    %define arg_esx -Ddriver_esx=enabled
+    %define arg_esx -Ddriver_esx=enabled -Dcurl=enabled
 %else
-    %define arg_esx -Ddriver_esx=disabled
+    %define arg_esx -Ddriver_esx=disabled -Dcurl=disabled
 %endif
 
 %if %{with_hyperv}
-    %define arg_hyperv -Ddriver_hyperv=enabled
+    %define arg_hyperv -Ddriver_hyperv=enabled -Dopenwsman=enabled
 %else
-    %define arg_hyperv -Ddriver_hyperv=disabled
+    %define arg_hyperv -Ddriver_hyperv=disabled -Dopenwsman=disabled
 %endif
 
 %if %{with_vmware}
@@ -1048,9 +1048,9 @@ exit 1
 %endif
 
 %if %{with_storage_gluster}
-    %define arg_storage_gluster -Dstorage_glusterfs=enabled
+    %define arg_storage_gluster -Dstorage_gluster=enabled -Dglusterfs=enabled
 %else
-    %define arg_storage_gluster -Dstorage_glusterfs=disabled
+    %define arg_storage_gluster -Dstorage_gluster=disabled -Dglusterfs=disabled
 %endif
 
 %if %{with_storage_zfs}
@@ -1102,9 +1102,9 @@ exit 1
 %endif
 
 %if %{with_storage_iscsi_direct}
-    %define arg_storage_iscsi_direct -Dstorage_iscsi_direct=enabled
+    %define arg_storage_iscsi_direct -Dstorage_iscsi_direct=enabled -Dlibiscsi=enabled
 %else
-    %define arg_storage_iscsi_direct -Dstorage_iscsi_direct=disabled
+    %define arg_storage_iscsi_direct -Dstorage_iscsi_direct=disabled -Dlibiscsi=disabled
 %endif
 
 %if %{with_libssh}
@@ -1963,6 +1963,10 @@ exit 0
 
 
 %changelog
+* Mon Nov  2 2020 Daniel P. Berrangé <berrange@redhat.com> - 6.8.0-4
+- Really fix meson option for disabling glusterfs
+- Fix disabling curl, openswman and libiscsi
+
 * Mon Nov  2 2020 Daniel P. Berrangé <berrange@redhat.com> - 6.8.0-4
 - Fix name of meson option for disabling glusterfs
 
