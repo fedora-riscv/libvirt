@@ -218,7 +218,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 6.6.0
-Release: 2%{?dist}
+Release: 3%{?dist}
 License: LGPLv2+
 URL: https://libvirt.org/
 
@@ -226,7 +226,13 @@ URL: https://libvirt.org/
     %define mainturl stable_updates/
 %endif
 Source: https://libvirt.org/sources/%{?mainturl}libvirt-%{version}.tar.xz
-Patch1: 0001-util-Fix-logic-in-virFileSetCOW.patch
+
+# Fix creation of pools on non-btrfs (bz #1870197)
+Patch0001: 0001-util-Fix-logic-in-virFileSetCOW.patch
+# devmapper fixes
+Patch0002: 0002-virdevmapper-Don-t-cache-device-mapper-major.patch
+Patch0003: 0003-virdevmapper-Handle-kernel-without-device-mapper-sup.patch
+Patch0004: 0004-virdevmapper-Ignore-all-errors-when-opening-dev-mapp.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-config-network = %{version}-%{release}
@@ -1995,6 +2001,9 @@ exit 0
 
 
 %changelog
+* Tue Nov 03 2020 Cole Robinson <crobinso@redhat.com> - 6.6.0-3
+- devmapper fixes
+
 * Fri Aug 21 2020 Daniel P. Berrangé <berrange@redhat.com> - 6.6.0-2
 - Fix creation of pools on non-btrfs (rhbz#1870197)
 
