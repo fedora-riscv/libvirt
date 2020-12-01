@@ -97,14 +97,14 @@
 %define with_numactl          0%{!?_without_numactl:1}
 
 # A few optional bits off by default, we enable later
-%define with_fuse             0%{!?_without_fuse:0}
-%define with_sanlock          0%{!?_without_sanlock:0}
-%define with_numad            0%{!?_without_numad:0}
-%define with_firewalld_zone   0%{!?_without_firewalld:0}
-%define with_libssh2          0%{!?_without_libssh2:0}
-%define with_wireshark        0%{!?_without_wireshark:0}
-%define with_libssh           0%{!?_without_libssh:0}
-%define with_dmidecode        0%{!?_without_dmidecode:0}
+%define with_fuse             0
+%define with_sanlock          0
+%define with_numad            0
+%define with_firewalld_zone   0
+%define with_libssh2          0
+%define with_wireshark        0
+%define with_libssh           0
+%define with_dmidecode        0
 
 # Finally set the OS / architecture specific special cases
 
@@ -167,8 +167,8 @@
     %define with_libssh2 0%{!?_without_libssh2:1}
 %endif
 
-# Enable wireshark plugins for all distros shipping libvirt 1.2.2 or newer
-%if 0%{?fedora}
+# Enable wireshark plugins for all distros except RHEL-7
+%if 0%{?fedora} || 0%{?rhel} > 7
     %define with_wireshark 0%{!?_without_wireshark:1}
     %define wireshark_plugindir %(pkg-config --variable plugindir wireshark)/epan
 %endif
@@ -213,8 +213,8 @@
 
 Summary: Library providing a simple virtualization API
 Name: libvirt
-Version: 6.9.0
-Release: 2%{?dist}
+Version: 6.10.0
+Release: 1%{?dist}
 License: LGPLv2+
 URL: https://libvirt.org/
 
@@ -386,7 +386,7 @@ BuildRequires: numad
 %endif
 
 %if %{with_wireshark}
-BuildRequires: wireshark-devel >= 2.4.0
+BuildRequires: wireshark-devel
 %endif
 
 %if %{with_libssh}
@@ -928,7 +928,7 @@ Bash completion script stub.
 %if %{with_wireshark}
 %package wireshark
 Summary: Wireshark dissector plugin for libvirt RPC transactions
-Requires: wireshark >= 2.4.0
+Requires: wireshark
 Requires: %{name}-libs = %{version}-%{release}
 
 %description wireshark
@@ -1240,8 +1240,6 @@ cp -a $RPM_BUILD_ROOT%{_sysconfdir}/libvirt/nwfilter/*.xml \
 # libvirt saves these files with mode 600
 chmod 600 $RPM_BUILD_ROOT%{_sysconfdir}/libvirt/nwfilter/*.xml
 
-# Strip auto-generated UUID - we need it generated per-install
-sed -i -e "/<uuid>/d" $RPM_BUILD_ROOT%{_datadir}/libvirt/networks/default.xml
 %if ! %{with_qemu}
 rm -f $RPM_BUILD_ROOT%{_datadir}/augeas/lenses/libvirtd_qemu.aug
 rm -f $RPM_BUILD_ROOT%{_datadir}/augeas/lenses/tests/test_libvirtd_qemu.aug
@@ -1422,9 +1420,7 @@ if test $1 -eq 1 && test ! -f %{_sysconfdir}/libvirt/qemu/networks/default.xml ;
         ;;
     esac
 
-    UUID=`/usr/bin/uuidgen`
     sed -e "s/${orig_sub}/${sub}/g" \
-        -e "s,</name>,</name>\n  <uuid>$UUID</uuid>," \
          < %{_datadir}/libvirt/networks/default.xml \
          > %{_sysconfdir}/libvirt/qemu/networks/default.xml
     ln -s ../default.xml %{_sysconfdir}/libvirt/qemu/networks/autostart/default.xml
@@ -1947,6 +1943,9 @@ exit 0
 
 
 %changelog
+* Tue Dec 01 2020 Cole Robinson <crobinso@redhat.com> - 6.10.0-1
+- Update to version 6.10.0
+
 * Wed Nov  4 2020 Daniel P. Berrangé <berrange@redhat.com> - 6.9.0-2
 - Re-apply reverted fix for disabling glusterfs, curl, openswman and libiscsi
 
