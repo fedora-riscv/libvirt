@@ -214,7 +214,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 6.10.0
-Release: 2%{?dist}
+Release: 2%{?dist}.1
 License: LGPLv2+
 URL: https://libvirt.org/
 
@@ -1943,6 +1943,9 @@ exit 0
 
 
 %changelog
+* Fri Dec 04 2020 Cole Robinson <aintdiscole@gmail.com> - 6.10.0-2.1
+- Rebuild for wireshark soname bump
+
 * Fri Dec 04 2020 Richard W.M. Jones <rjones@redhat.com> - 6.10.0-2
 - Build libvirt-daemon-kvm for riscv64.
 
