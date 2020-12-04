@@ -17,7 +17,7 @@
     %define _vpath_builddir %{_target_platform}
 %endif
 
-%define arches_qemu_kvm         %{ix86} x86_64 %{power64} %{arm} aarch64 s390x
+%define arches_qemu_kvm         %{ix86} x86_64 %{power64} %{arm} aarch64 s390x riscv64
 %if 0%{?rhel}
     %define arches_qemu_kvm     x86_64 %{power64} aarch64 s390x
 %endif
@@ -214,7 +214,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 6.10.0
-Release: 1%{?dist}
+Release: 2%{?dist}
 License: LGPLv2+
 URL: https://libvirt.org/
 
@@ -1943,6 +1943,9 @@ exit 0
 
 
 %changelog
+* Fri Dec 04 2020 Richard W.M. Jones <rjones@redhat.com> - 6.10.0-2
+- Build libvirt-daemon-kvm for riscv64.
+
 * Tue Dec 01 2020 Cole Robinson <crobinso@redhat.com> - 6.10.0-1
 - Update to version 6.10.0
 
