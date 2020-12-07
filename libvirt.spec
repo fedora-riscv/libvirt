@@ -218,7 +218,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 6.6.0
-Release: 4%{?dist}
+Release: 5%{?dist}
 License: LGPLv2+
 URL: https://libvirt.org/
 
@@ -233,6 +233,11 @@ Patch0001: 0001-util-Fix-logic-in-virFileSetCOW.patch
 Patch0002: 0002-virdevmapper-Don-t-cache-device-mapper-major.patch
 Patch0003: 0003-virdevmapper-Handle-kernel-without-device-mapper-sup.patch
 Patch0004: 0004-virdevmapper-Ignore-all-errors-when-opening-dev-mapp.patch
+# Fix noisy log error 'Failed to open file ...unique_id...' (bz #1692100)
+Patch0005: 0005-util-use-g_autofree-in-virSCSIHostGetUniqueId.patch
+Patch0006: 0006-util-quieten-virSCSIHostGetUniqueId.patch
+# Fix USB device error 'vendor cannot be 0' (bz #1897625)
+Patch0007: 0007-node_device-Use-udev-monitor-source.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-config-network = %{version}-%{release}
@@ -2001,6 +2006,10 @@ exit 0
 
 
 %changelog
+* Mon Dec 07 2020 Cole Robinson <crobinso@redhat.com> - 6.6.0-5
+- Fix noisy log error 'Failed to open file ...unique_id...' (bz #1692100)
+- Fix USB device error 'vendor cannot be 0' (bz #1897625)
+
 * Fri Dec 04 2020 Richard W.M. Jones <rjones@redhat.com> - 6.10.0-2
 - Build libvirt-daemon-kvm for riscv64.
 
