@@ -6,7 +6,7 @@
 %define min_rhel 7
 %define min_fedora 31
 
-%if (0%{?fedora} && 0%{?fedora} >= %{min_fedora}) || (0%{?rhel} && 0%{?rhel} >= %{min_rhel})
+%if 0%{?fedora} >= %{min_fedora} || 0%{?rhel} >= %{min_rhel}
     %define supported_platform 1
 %else
     %define supported_platform 0
@@ -213,8 +213,8 @@
 
 Summary: Library providing a simple virtualization API
 Name: libvirt
-Version: 6.10.0
-Release: 2%{?dist}.1
+Version: 7.0.0
+Release: 1%{?dist}
 License: LGPLv2+
 URL: https://libvirt.org/
 
@@ -734,6 +734,9 @@ Requires: lzop
 Requires: xz
     %if 0%{?fedora} || 0%{?rhel} > 7
 Requires: systemd-container
+    %endif
+    %if 0%{?fedora} || 0%{?rhel} > 7
+Requires: swtpm-tools
     %endif
 
 %description daemon-driver-qemu
@@ -1439,9 +1442,13 @@ fi
 rm -rf %{_localstatedir}/lib/rpm-state/libvirt || :
 
 %post daemon-config-nwfilter
-cp %{_datadir}/libvirt/nwfilter/*.xml %{_sysconfdir}/libvirt/nwfilter/
-# libvirt saves these files with mode 600
-chmod 600 %{_sysconfdir}/libvirt/nwfilter/*.xml
+for datadir_file in %{_datadir}/libvirt/nwfilter/*.xml; do
+  sysconfdir_file=%{_sysconfdir}/libvirt/nwfilter/$(basename "$datadir_file")
+  if [ ! -f "$sysconfdir_file" ]; then
+    # libvirt saves these files with mode 600
+    install -m 0600 "$datadir_file" "$sysconfdir_file"
+  fi
+done
 # Make sure libvirt picks up the new nwfilter defininitons
 mkdir -p %{_localstatedir}/lib/rpm-state/libvirt || :
 touch %{_localstatedir}/lib/rpm-state/libvirt/restart || :
@@ -1740,7 +1747,7 @@ exit 0
 %{_datadir}/augeas/lenses/tests/test_libvirtd_qemu.aug
 %{_libdir}/%{name}/connection-driver/libvirt_driver_qemu.so
 %dir %attr(0711, root, root) %{_localstatedir}/lib/libvirt/swtpm/
-%dir %attr(0711, root, root) %{_localstatedir}/log/swtpm/libvirt/qemu/
+%dir %attr(0730, tss, tss) %{_localstatedir}/log/swtpm/libvirt/qemu/
 %{_bindir}/virt-qemu-run
 %{_mandir}/man1/virt-qemu-run.1*
 %endif
@@ -1943,6 +1950,9 @@ exit 0
 
 
 %changelog
+* Fri Jan 15 2021 Daniel P. Berrangé <berrange@redhat.com> - 7.0.0-1
+- Rebase to 7.0.0 release
+
 * Fri Dec 04 2020 Cole Robinson <aintdiscole@gmail.com> - 6.10.0-2.1
 - Rebuild for wireshark soname bump
 
