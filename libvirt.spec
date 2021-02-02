@@ -101,6 +101,7 @@
 %define with_sanlock          0
 %define with_numad            0
 %define with_firewalld_zone   0
+%define with_netcf            0
 %define with_libssh2          0
 %define with_wireshark        0
 %define with_libssh           0
@@ -143,6 +144,10 @@
 
 %if 0%{?fedora} || 0%{?rhel} > 7
     %define with_firewalld_zone 0%{!?_without_firewalld_zone:1}
+%endif
+
+%if (0%{?fedora} && 0%{?fedora} < 34) || (0%{?rhel} && 0%{?rhel} < 9)
+    %define with_netcf 0%{!?_without_netcf:1}
 %endif
 
 
@@ -214,7 +219,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 7.0.0
-Release: 2%{?dist}
+Release: 3%{?dist}
 License: LGPLv2+
 URL: https://libvirt.org/
 
@@ -222,6 +227,8 @@ URL: https://libvirt.org/
     %define mainturl stable_updates/
 %endif
 Source: https://libvirt.org/sources/%{?mainturl}libvirt-%{version}.tar.xz
+
+Patch0001: 0001-build-support-explicitly-disabling-netcf.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-config-network = %{version}-%{release}
@@ -358,8 +365,9 @@ BuildRequires: fuse-devel >= 2.8.6
 %if %{with_libssh2}
 BuildRequires: libssh2-devel >= 1.3.0
 %endif
-
+%if %{with_netcf}
 BuildRequires: netcf-devel >= 0.2.2
+%endif
 %if %{with_esx}
 BuildRequires: libcurl-devel
 %endif
@@ -528,13 +536,13 @@ capabilities.
 Summary: Interface driver plugin for the libvirtd daemon
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-libs = %{version}-%{release}
+%if %{with_netcf}
 Requires: netcf-libs >= 0.2.2
+%endif
 
 %description daemon-driver-interface
 The interface driver plugin for the libvirtd daemon, providing
-an implementation of the network interface APIs using the
-netcf library
-
+an implementation of the host network interface APIs.
 
 %package daemon-driver-secret
 Summary: Secret driver plugin for the libvirtd daemon
@@ -1100,6 +1108,12 @@ exit 1
     %define arg_firewalld_zone -Dfirewalld_zone=disabled
 %endif
 
+%if %{with_netcf}
+    %define arg_netcf -Dnetcf=enabled
+%else
+    %define arg_netcf -Dnetcf=disabled
+%endif
+
 %if %{with_wireshark}
     %define arg_wireshark -Dwireshark_dissector=enabled
 %else
@@ -1170,7 +1184,7 @@ export SOURCE_DATE_EPOCH=$(stat --printf='%Y' %{_specdir}/%{name}.spec)
            %{?arg_numad} \
            -Dcapng=enabled \
            %{?arg_fuse} \
-           -Dnetcf=enabled \
+           %{?arg_netcf} \
            -Dselinux=enabled \
            %{?arg_selinux_mount} \
            -Dapparmor=disabled \
@@ -1950,6 +1964,9 @@ exit 0
 
 
 %changelog
+* Tue Feb 02 2021 Laine Stump <laine@redhat.com> - 7.0.0-3
+- disable netcf in build
+
 * Tue Jan 26 2021 Fedora Release Engineering <releng@fedoraproject.org> - 7.0.0-2
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_34_Mass_Rebuild
 
