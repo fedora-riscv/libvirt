@@ -219,7 +219,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 7.0.0
-Release: 3%{?dist}
+Release: 4%{?dist}
 License: LGPLv2+
 URL: https://libvirt.org/
 
@@ -1302,7 +1302,9 @@ mv $RPM_BUILD_ROOT%{_datadir}/systemtap/tapset/libvirt_qemu_probes.stp \
 %endif
 
 %check
-VIR_TEST_DEBUG=1 %meson_test --no-suite syntax-check
+# Building on slow archs, like emulated s390x in Fedora copr, requires
+# raising the test timeout
+VIR_TEST_DEBUG=1 %meson_test --no-suite syntax-check --timeout-multiplier 10
 
 %post libs
 %if 0%{?rhel} == 7
@@ -1964,6 +1966,9 @@ exit 0
 
 
 %changelog
+* Wed Feb 03 2021 Cole Robinson <aintdiscole@gmail.com> - 7.0.0-4
+- Increase meson test timeout to fix builds on s390x copr
+
 * Tue Feb 02 2021 Laine Stump <laine@redhat.com> - 7.0.0-3
 - disable netcf in build
 
