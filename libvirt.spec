@@ -17,7 +17,7 @@
     %define _vpath_builddir %{_target_platform}
 %endif
 
-%define arches_qemu_kvm         %{ix86} x86_64 %{power64} %{arm} aarch64 s390x riscv64
+%define arches_qemu_kvm         %{ix86} x86_64 %{power64} %{arm} aarch64 s390x
 %if 0%{?rhel}
     %define arches_qemu_kvm     x86_64 %{power64} aarch64 s390x
 %endif
@@ -218,8 +218,8 @@
 
 Summary: Library providing a simple virtualization API
 Name: libvirt
-Version: 7.0.0
-Release: 4%{?dist}
+Version: 7.1.0
+Release: 1%{?dist}
 License: LGPLv2+
 URL: https://libvirt.org/
 
@@ -227,8 +227,6 @@ URL: https://libvirt.org/
     %define mainturl stable_updates/
 %endif
 Source: https://libvirt.org/sources/%{?mainturl}libvirt-%{version}.tar.xz
-
-Patch0001: 0001-build-support-explicitly-disabling-netcf.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-config-network = %{version}-%{release}
@@ -260,7 +258,6 @@ Requires: libvirt-libs = %{version}-%{release}
 
 # All build-time requirements. Run-time requirements are
 # listed against each sub-RPM
-BuildRequires: gettext-devel
 %if 0%{?rhel} == 7
 BuildRequires: python36-docutils
 %else
@@ -1596,6 +1593,7 @@ exit 0
 %{_mandir}/man8/libvirtd.8*
 %{_mandir}/man8/virtlogd.8*
 %{_mandir}/man8/virtlockd.8*
+%{_mandir}/man8/virtproxyd.8*
 %{_mandir}/man7/virkey*.7*
 
 %files daemon-config-network
@@ -1620,6 +1618,7 @@ exit 0
 %{_unitdir}/virtinterfaced-admin.socket
 %attr(0755, root, root) %{_sbindir}/virtinterfaced
 %{_libdir}/%{name}/connection-driver/libvirt_driver_interface.so
+%{_mandir}/man8/virtinterfaced.8*
 
 %files daemon-driver-network
 %config(noreplace) %{_sysconfdir}/sysconfig/virtnetworkd
@@ -1639,6 +1638,7 @@ exit 0
 %dir %attr(0755, root, root) %{_localstatedir}/lib/libvirt/dnsmasq/
 %attr(0755, root, root) %{_libexecdir}/libvirt_leaseshelper
 %{_libdir}/%{name}/connection-driver/libvirt_driver_network.so
+%{_mandir}/man8/virtnetworkd.8*
 
 %if %{with_firewalld_zone}
 %{_prefix}/lib/firewalld/zones/libvirt.xml
@@ -1655,6 +1655,7 @@ exit 0
 %{_unitdir}/virtnodedevd-admin.socket
 %attr(0755, root, root) %{_sbindir}/virtnodedevd
 %{_libdir}/%{name}/connection-driver/libvirt_driver_nodedev.so
+%{_mandir}/man8/virtnodedevd.8*
 
 %files daemon-driver-nwfilter
 %config(noreplace) %{_sysconfdir}/sysconfig/virtnwfilterd
@@ -1669,6 +1670,7 @@ exit 0
 %dir %attr(0700, root, root) %{_sysconfdir}/libvirt/nwfilter/
 %ghost %dir %{_rundir}/libvirt/network/
 %{_libdir}/%{name}/connection-driver/libvirt_driver_nwfilter.so
+%{_mandir}/man8/virtnwfilterd.8*
 
 %files daemon-driver-secret
 %config(noreplace) %{_sysconfdir}/sysconfig/virtsecretd
@@ -1681,6 +1683,7 @@ exit 0
 %{_unitdir}/virtsecretd-admin.socket
 %attr(0755, root, root) %{_sbindir}/virtsecretd
 %{_libdir}/%{name}/connection-driver/libvirt_driver_secret.so
+%{_mandir}/man8/virtsecretd.8*
 
 %files daemon-driver-storage
 
@@ -1698,6 +1701,7 @@ exit 0
 %{_libdir}/%{name}/connection-driver/libvirt_driver_storage.so
 %{_libdir}/%{name}/storage-backend/libvirt_storage_backend_fs.so
 %{_libdir}/%{name}/storage-file/libvirt_storage_file_fs.so
+%{_mandir}/man8/virtstoraged.8*
 
 %files daemon-driver-storage-disk
 %{_libdir}/%{name}/storage-backend/libvirt_storage_backend_disk.so
@@ -1766,6 +1770,7 @@ exit 0
 %dir %attr(0730, tss, tss) %{_localstatedir}/log/swtpm/libvirt/qemu/
 %{_bindir}/virt-qemu-run
 %{_mandir}/man1/virt-qemu-run.1*
+%{_mandir}/man8/virtqemud.8*
 %endif
 
 %if %{with_lxc}
@@ -1788,6 +1793,7 @@ exit 0
 %{_datadir}/augeas/lenses/tests/test_libvirtd_lxc.aug
 %attr(0755, root, root) %{_libexecdir}/libvirt_lxc
 %{_libdir}/%{name}/connection-driver/libvirt_driver_lxc.so
+%{_mandir}/man8/virtlxcd.8*
 %endif
 
 %if %{with_libxl}
@@ -1810,6 +1816,7 @@ exit 0
 %ghost %dir %{_rundir}/libvirt/libxl/
 %dir %attr(0700, root, root) %{_localstatedir}/lib/libvirt/libxl/
 %{_libdir}/%{name}/connection-driver/libvirt_driver_libxl.so
+%{_mandir}/man8/virtxend.8*
 %endif
 
 %if %{with_vbox}
@@ -1824,6 +1831,7 @@ exit 0
 %{_unitdir}/virtvboxd-admin.socket
 %attr(0755, root, root) %{_sbindir}/virtvboxd
 %{_libdir}/%{name}/connection-driver/libvirt_driver_vbox.so
+%{_mandir}/man8/virtvboxd.8*
 %endif
 
 %if %{with_qemu_tcg}
@@ -1966,6 +1974,9 @@ exit 0
 
 
 %changelog
+* Mon Mar 01 2021 Cole Robinson <crobinso@redhat.com> - 7.1.0-1
+- Update to version 7.1.0
+
 * Wed Feb 03 2021 Cole Robinson <aintdiscole@gmail.com> - 7.0.0-4
 - Increase meson test timeout to fix builds on s390x copr
 
