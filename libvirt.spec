@@ -1976,7 +1976,7 @@ exit 0
 
 %changelog
 * Tue Mar  9 2021 Richard W.M. Jones <rjones@redhat.com> - 7.1.0-2
-- Bump and rebuild for libwsman_client.so.4
+- Bump and rebuild for libwsman_client.so.4 -> .5
 
 * Mon Mar 01 2021 Cole Robinson <crobinso@redhat.com> - 7.1.0-1
 - Update to version 7.1.0
