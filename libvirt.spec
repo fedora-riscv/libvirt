@@ -218,8 +218,8 @@
 
 Summary: Library providing a simple virtualization API
 Name: libvirt
-Version: 7.1.0
-Release: 2%{?dist}
+Version: 7.2.0
+Release: 1%{?dist}
 License: LGPLv2+
 URL: https://libvirt.org/
 
@@ -227,7 +227,6 @@ URL: https://libvirt.org/
     %define mainturl stable_updates/
 %endif
 Source: https://libvirt.org/sources/%{?mainturl}libvirt-%{version}.tar.xz
-Patch1: 32bit-fix.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-config-network = %{version}-%{release}
@@ -267,7 +266,6 @@ BuildRequires: python3-docutils
 BuildRequires: gcc
 BuildRequires: meson >= 0.54.0
 BuildRequires: ninja-build
-BuildRequires: make
 BuildRequires: git
 %if 0%{?fedora} || 0%{?rhel} > 7
 BuildRequires: perl-interpreter
@@ -279,7 +277,7 @@ BuildRequires: systemd-units
 %if %{with_libxl}
 BuildRequires: xen-devel
 %endif
-BuildRequires: glib2-devel >= 2.48
+BuildRequires: glib2-devel >= 2.56
 BuildRequires: libxml2-devel
 BuildRequires: libxslt
 BuildRequires: readline-devel
@@ -1975,6 +1973,9 @@ exit 0
 
 
 %changelog
+* Mon Apr 05 2021 Cole Robinson <crobinso@redhat.com> - 7.2.0-1
+- Update to version 7.2.0
+
 * Tue Mar  9 2021 Richard W.M. Jones <rjones@redhat.com> - 7.1.0-2
 - Bump and rebuild for libwsman_client.so.4 -> .5
 
