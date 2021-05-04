@@ -19,7 +19,11 @@
 
 %define arches_qemu_kvm         %{ix86} x86_64 %{power64} %{arm} aarch64 s390x
 %if 0%{?rhel}
-    %define arches_qemu_kvm     x86_64 %{power64} aarch64 s390x
+    %if 0%{?rhel} <= 8
+        %define arches_qemu_kvm     x86_64 %{power64} aarch64 s390x
+    %else
+        %define arches_qemu_kvm     x86_64 aarch64 s390x
+    %endif
 %endif
 
 %define arches_64bit            x86_64 %{power64} aarch64 s390x riscv64
@@ -218,7 +222,7 @@
 
 Summary: Library providing a simple virtualization API
 Name: libvirt
-Version: 7.2.0
+Version: 7.3.0
 Release: 1%{?dist}
 License: LGPLv2+
 URL: https://libvirt.org/
@@ -460,6 +464,13 @@ Requires: numad
 Requires: dbus
 # For uid creation during pre
 Requires(pre): shadow-utils
+# Needed by /usr/libexec/libvirt-guests.sh script.
+Requires: gettext
+
+# Ensure smooth upgrades
+Obsoletes: libvirt-admin < 7.3.0
+Provides: libvirt-admin
+Obsoletes: libvirt-bash-completion < 7.3.0
 
 %description daemon
 Server side daemon required to manage the virtualization capabilities
@@ -897,11 +908,11 @@ capabilities of VirtualBox
 %package client
 Summary: Client side utilities of the libvirt library
 Requires: %{name}-libs = %{version}-%{release}
-# Needed by /usr/libexec/libvirt-guests.sh script.
-Requires: gettext
 # Needed by virt-pki-validate script.
 Requires: gnutls-utils
-Requires: %{name}-bash-completion = %{version}-%{release}
+
+# Ensure smooth upgrades
+Obsoletes: libvirt-bash-completion < 7.3.0
 
 %description client
 The client binaries needed to access the virtualization
@@ -917,20 +928,6 @@ Requires: cyrus-sasl-gssapi
 
 %description libs
 Shared libraries for accessing the libvirt daemon.
-
-%package admin
-Summary: Set of tools to control libvirt daemon
-Requires: %{name}-libs = %{version}-%{release}
-Requires: %{name}-bash-completion = %{version}-%{release}
-
-%description admin
-The client side utilities to control the libvirt daemon.
-
-%package bash-completion
-Summary: Bash completion script
-
-%description bash-completion
-Bash completion script stub.
 
 %if %{with_wireshark}
 %package wireshark
@@ -1327,6 +1324,7 @@ exit 0
 %systemd_post libvirtd.socket libvirtd-ro.socket libvirtd-admin.socket
 %systemd_post libvirtd-tcp.socket libvirtd-tls.socket
 %systemd_post libvirtd.service
+%systemd_post libvirt-guests.service
 
 # request daemon restart in posttrans
 mkdir -p %{_localstatedir}/lib/rpm-state/libvirt || :
@@ -1338,6 +1336,7 @@ touch %{_localstatedir}/lib/rpm-state/libvirt/restart || :
 %systemd_preun libvirtd.socket libvirtd-ro.socket libvirtd-admin.socket
 %systemd_preun virtlogd.socket virtlogd-admin.socket virtlogd.service
 %systemd_preun virtlockd.socket virtlockd-admin.socket virtlockd.service
+%systemd_preun libvirt-guests.service
 
 %postun daemon
 /bin/systemctl daemon-reload >/dev/null 2>&1 || :
@@ -1345,6 +1344,7 @@ if [ $1 -ge 1 ] ; then
     /bin/systemctl reload-or-try-restart virtlockd.service >/dev/null 2>&1 || :
     /bin/systemctl reload-or-try-restart virtlogd.service >/dev/null 2>&1 || :
 fi
+%systemd_postun libvirt-guests.service
 
 # In upgrade scenario we must explicitly enable virtlockd/virtlogd
 # sockets, if libvirtd is already enabled and start them if
@@ -1489,16 +1489,6 @@ fi
 exit 0
 %endif
 
-%preun client
-
-%systemd_preun libvirt-guests.service
-
-%post client
-%systemd_post libvirt-guests.service
-
-%postun client
-%systemd_postun libvirt-guests.service
-
 %if %{with_lxc}
 %pre login-shell
 getent group virtlogin >/dev/null || groupadd -r virtlogin
@@ -1534,6 +1524,7 @@ exit 0
 %{_unitdir}/virtlockd.service
 %{_unitdir}/virtlockd.socket
 %{_unitdir}/virtlockd-admin.socket
+%{_unitdir}/libvirt-guests.service
 %config(noreplace) %{_sysconfdir}/sysconfig/libvirtd
 %config(noreplace) %{_sysconfdir}/sysconfig/virtproxyd
 %config(noreplace) %{_sysconfdir}/sysconfig/virtlogd
@@ -1543,6 +1534,7 @@ exit 0
 %config(noreplace) %{_sysconfdir}/libvirt/virtlogd.conf
 %config(noreplace) %{_sysconfdir}/libvirt/virtlockd.conf
 %config(noreplace) %{_sysconfdir}/sasl2/libvirt.conf
+%config(noreplace) %{_sysconfdir}/sysconfig/libvirt-guests
 %config(noreplace) %{_prefix}/lib/sysctl.d/60-libvirtd.conf
 
 %config(noreplace) %{_sysconfdir}/logrotate.d/libvirtd
@@ -1588,12 +1580,19 @@ exit 0
 %attr(0755, root, root) %{_sbindir}/virtproxyd
 %attr(0755, root, root) %{_sbindir}/virtlogd
 %attr(0755, root, root) %{_sbindir}/virtlockd
+%attr(0755, root, root) %{_libexecdir}/libvirt-guests.sh
 
+%{_mandir}/man1/virt-admin.1*
+%{_mandir}/man1/virt-host-validate.1*
 %{_mandir}/man8/libvirtd.8*
 %{_mandir}/man8/virtlogd.8*
 %{_mandir}/man8/virtlockd.8*
 %{_mandir}/man8/virtproxyd.8*
 %{_mandir}/man7/virkey*.7*
+
+%{_bindir}/virt-host-validate
+%{_bindir}/virt-admin
+%{_datadir}/bash-completion/completions/virt-admin
 
 %files daemon-config-network
 %dir %{_datadir}/libvirt/networks/
@@ -1874,24 +1873,11 @@ exit 0
 %{_mandir}/man1/virsh.1*
 %{_mandir}/man1/virt-xml-validate.1*
 %{_mandir}/man1/virt-pki-validate.1*
-%{_mandir}/man1/virt-host-validate.1*
 %{_bindir}/virsh
 %{_bindir}/virt-xml-validate
 %{_bindir}/virt-pki-validate
-%{_bindir}/virt-host-validate
-
-%{_datadir}/systemtap/tapset/libvirt_probes*.stp
-%{_datadir}/systemtap/tapset/libvirt_functions.stp
-%if %{with_qemu}
-%{_datadir}/systemtap/tapset/libvirt_qemu_probes*.stp
-%endif
 
 %{_datadir}/bash-completion/completions/virsh
-
-
-%{_unitdir}/libvirt-guests.service
-%config(noreplace) %{_sysconfdir}/sysconfig/libvirt-guests
-%attr(0755, root, root) %{_libexecdir}/libvirt-guests.sh
 
 %files libs -f %{name}.lang
 %license COPYING COPYING.LESSER
@@ -1905,19 +1891,17 @@ exit 0
 %dir %{_datadir}/libvirt/schemas/
 %dir %attr(0755, root, root) %{_localstatedir}/lib/libvirt/
 
+%{_datadir}/systemtap/tapset/libvirt_probes*.stp
+%{_datadir}/systemtap/tapset/libvirt_functions.stp
+%if %{with_qemu}
+%{_datadir}/systemtap/tapset/libvirt_qemu_probes*.stp
+%endif
+
 %{_datadir}/libvirt/schemas/*.rng
 
 %{_datadir}/libvirt/cpu_map/*.xml
 
 %{_datadir}/libvirt/test-screenshot.png
-
-%files admin
-%{_mandir}/man1/virt-admin.1*
-%{_bindir}/virt-admin
-%{_datadir}/bash-completion/completions/virt-admin
-
-%files bash-completion
-%{_datadir}/bash-completion/completions/vsh
 
 %if %{with_wireshark}
 %files wireshark
@@ -1973,6 +1957,10 @@ exit 0
 
 
 %changelog
+* Tue May  4 2021 Daniel P. Berrangé <berrange@redhat.com> - 7.3.0-1
+- Update to 7.3.0 release
+- Remove libvirt-admin & libvirt-bash-completion subpackages
+
 * Mon Apr 05 2021 Cole Robinson <crobinso@redhat.com> - 7.2.0-1
 - Update to version 7.2.0
 
