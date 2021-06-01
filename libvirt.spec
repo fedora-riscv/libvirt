@@ -3,26 +3,15 @@
 # This spec file assumes you are building on a Fedora or RHEL version
 # that's still supported by the vendor. It may work on other distros
 # or versions, but no effort will be made to ensure that going forward.
-%define min_rhel 7
-%define min_fedora 31
-
-%if 0%{?fedora} >= %{min_fedora} || 0%{?rhel} >= %{min_rhel}
-    %define supported_platform 1
-%else
-    %define supported_platform 0
-%endif
-
-# On RHEL 7 and older macro _vpath_builddir is not defined.
-%if 0%{?rhel} && 0%{?rhel} <= 7
-    %define _vpath_builddir %{_target_platform}
-%endif
+%define min_rhel 8
+%define min_fedora 33
 
 %define arches_qemu_kvm         %{ix86} x86_64 %{power64} %{arm} aarch64 s390x
 %if 0%{?rhel}
-    %if 0%{?rhel} <= 8
-        %define arches_qemu_kvm     x86_64 %{power64} aarch64 s390x
-    %else
+    %if 0%{?rhel} > 8
         %define arches_qemu_kvm     x86_64 aarch64 s390x
+    %else
+        %define arches_qemu_kvm     x86_64 %{power64} aarch64 s390x
     %endif
 %endif
 
@@ -76,26 +65,26 @@
 %endif
 
 %define with_storage_gluster 0%{!?_without_storage_gluster:1}
-%ifnarch %{arches_qemu_kvm}
-    # gluster is only built where qemu driver is enabled on RHEL 8
-    %if 0%{?rhel} >= 8
+%if 0%{?rhel}
+    # Glusterfs has been dropped in RHEL-9, and before that
+    # was only enabled on arches where KVM exists
+    %if 0%{?rhel} > 8
         %define with_storage_gluster 0
+    %else
+        %ifnarch %{arches_qemu_kvm}
+            %define with_storage_gluster 0
+        %endif
     %endif
 %endif
 
-# F25+ has zfs-fuse
+# Fedora has zfs-fuse
 %if 0%{?fedora}
     %define with_storage_zfs      0%{!?_without_storage_zfs:1}
 %else
     %define with_storage_zfs      0
 %endif
 
-# We need a recent enough libiscsi (>= 1.18.0)
-%if 0%{?fedora} || 0%{?rhel} > 7
-    %define with_storage_iscsi_direct 0%{!?_without_storage_iscsi_direct:1}
-%else
-    %define with_storage_iscsi_direct 0
-%endif
+%define with_storage_iscsi_direct 0%{!?_without_storage_iscsi_direct:1}
 
 # Other optional features
 %define with_numactl          0%{!?_without_numactl:1}
@@ -130,9 +119,7 @@
     %define with_storage_rbd 0
 %endif
 
-# RHEL doesn't ship OpenVZ, VBox, PowerHypervisor,
-# VMware, libxenlight (Xen 4.1 and newer),
-# or HyperV.
+# RHEL doesn't ship many hypervisor drivers
 %if 0%{?rhel}
     %define with_openvz 0
     %define with_vbox 0
@@ -140,15 +127,10 @@
     %define with_libxl 0
     %define with_hyperv 0
     %define with_vz 0
-
-    %if 0%{?rhel} > 7
-        %define with_lxc 0
-    %endif
+    %define with_lxc 0
 %endif
 
-%if 0%{?fedora} || 0%{?rhel} > 7
-    %define with_firewalld_zone 0%{!?_without_firewalld_zone:1}
-%endif
+%define with_firewalld_zone 0%{!?_without_firewalld_zone:1}
 
 %if (0%{?fedora} && 0%{?fedora} < 34) || (0%{?rhel} && 0%{?rhel} < 9)
     %define with_netcf 0%{!?_without_netcf:1}
@@ -176,16 +158,12 @@
     %define with_libssh2 0%{!?_without_libssh2:1}
 %endif
 
-# Enable wireshark plugins for all distros except RHEL-7
-%if 0%{?fedora} || 0%{?rhel} > 7
-    %define with_wireshark 0%{!?_without_wireshark:1}
-    %define wireshark_plugindir %(pkg-config --variable plugindir wireshark)/epan
-%endif
+# Enable wireshark plugins for all distros
+%define with_wireshark 0%{!?_without_wireshark:1}
+%define wireshark_plugindir %(pkg-config --variable plugindir wireshark)/epan
 
-# Enable libssh transport for new enough distros
-%if 0%{?fedora} || 0%{?rhel} > 7
-    %define with_libssh 0%{!?_without_libssh:1}
-%endif
+# Enable libssh transport for all distros
+%define with_libssh 0%{!?_without_libssh:1}
 
 %if %{with_qemu} || %{with_lxc}
 # numad is used to manage the CPU and memory placement dynamically,
@@ -213,16 +191,12 @@
     %define enable_werror -Dwerror=false
 %endif
 
-%if 0%{?rhel} == 7
-    %define tls_priority "NORMAL"
-%else
-    %define tls_priority "@LIBVIRT,SYSTEM"
-%endif
+%define tls_priority "@LIBVIRT,SYSTEM"
 
 
 Summary: Library providing a simple virtualization API
 Name: libvirt
-Version: 7.3.0
+Version: 7.4.0
 Release: 1%{?dist}
 License: LGPLv2+
 URL: https://libvirt.org/
@@ -262,20 +236,12 @@ Requires: libvirt-libs = %{version}-%{release}
 
 # All build-time requirements. Run-time requirements are
 # listed against each sub-RPM
-%if 0%{?rhel} == 7
-BuildRequires: python36-docutils
-%else
 BuildRequires: python3-docutils
-%endif
 BuildRequires: gcc
 BuildRequires: meson >= 0.54.0
 BuildRequires: ninja-build
 BuildRequires: git
-%if 0%{?fedora} || 0%{?rhel} > 7
 BuildRequires: perl-interpreter
-%else
-BuildRequires: perl
-%endif
 BuildRequires: python3
 BuildRequires: systemd-units
 %if %{with_libxl}
@@ -333,13 +299,8 @@ BuildRequires: device-mapper-devel
 # For XFS reflink clone support
 BuildRequires: xfsprogs-devel
 %if %{with_storage_rbd}
-    %if 0%{?fedora} || 0%{?rhel} > 7
 BuildRequires: librados-devel
 BuildRequires: librbd-devel
-    %else
-BuildRequires: librados2-devel
-BuildRequires: librbd1-devel
-    %endif
 %endif
 %if %{with_storage_gluster}
 BuildRequires: glusterfs-api-devel >= 3.4.1
@@ -401,11 +362,7 @@ BuildRequires: wireshark-devel
 BuildRequires: libssh-devel >= 0.7.0
 %endif
 
-# On RHEL-7 rpcgen is still part of glibc-common package
-%if 0%{?fedora} || 0%{?rhel} > 7
 BuildRequires: rpcgen
-%endif
-
 BuildRequires: libtirpc-devel
 
 # Needed for the firewalld_reload macro
@@ -440,12 +397,10 @@ Requires: /usr/bin/nc
 # for modprobe of pci devices
 Requires: module-init-tools
 
-# for /sbin/ip & /sbin/tc
+# for /sbin/ip
 Requires: iproute
-# tc is provided by iproute-tc since at least Fedora 26
-%if 0%{?fedora} || 0%{?rhel} > 7
+# for /sbin/tc
 Requires: iproute-tc
-%endif
 
 Requires: polkit >= 0.112
 %if %{with_dmidecode}
@@ -469,7 +424,7 @@ Requires: gettext
 
 # Ensure smooth upgrades
 Obsoletes: libvirt-admin < 7.3.0
-Provides: libvirt-admin
+Provides: libvirt-admin = %{version}-%{release}
 Obsoletes: libvirt-bash-completion < 7.3.0
 
 %description daemon
@@ -529,9 +484,7 @@ Requires: libvirt-libs = %{version}-%{release}
 # needed for device enumeration
 Requires: systemd >= 185
 # For managing persistent mediated devices
-%if 0%{?fedora} || 0%{?rhel} > 7
 Requires: mdevctl
-%endif
 
 %description daemon-driver-nodedev
 The nodedev driver plugin for the libvirtd daemon, providing
@@ -629,7 +582,6 @@ volumes using the host iscsi stack.
 Summary: Storage driver plugin for iscsi-direct
 Requires: libvirt-daemon-driver-storage-core = %{version}-%{release}
 Requires: libvirt-libs = %{version}-%{release}
-Requires: libiscsi
 
 %description daemon-driver-storage-iscsi-direct
 The storage driver backend adding implementation of the storage APIs for iscsi
@@ -747,12 +699,8 @@ Requires: gzip
 Requires: bzip2
 Requires: lzop
 Requires: xz
-    %if 0%{?fedora} || 0%{?rhel} > 7
 Requires: systemd-container
-    %endif
-    %if 0%{?fedora} || 0%{?rhel} > 7
 Requires: swtpm-tools
-    %endif
 
 %description daemon-driver-qemu
 The qemu driver plugin for the libvirtd daemon, providing
@@ -768,9 +716,7 @@ Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-libs = %{version}-%{release}
 # There really is a hard cross-driver dependency here
 Requires: libvirt-daemon-driver-network = %{version}-%{release}
-    %if 0%{?fedora} || 0%{?rhel} > 7
 Requires: systemd-container
-    %endif
 
 %description daemon-driver-lxc
 The LXC driver plugin for the libvirtd daemon, providing
@@ -985,11 +931,10 @@ Libvirt plugin for NSS for translating domain names into IP addresses.
 %autosetup -S git_am
 
 %build
-
-%if 0%{?fedora} == 34
-    # binutils change in F34 broke linking of tests
-    # https://bugzilla.redhat.com/show_bug.cgi?id=1889763
-    %define _lto_cflags %{nil}
+%if 0%{?fedora} >= %{min_fedora} || 0%{?rhel} >= %{min_rhel}
+    %define supported_platform 1
+%else
+    %define supported_platform 0
 %endif
 
 %if ! %{supported_platform}
@@ -1298,16 +1243,6 @@ mv $RPM_BUILD_ROOT%{_datadir}/systemtap/tapset/libvirt_qemu_probes.stp \
 # Building on slow archs, like emulated s390x in Fedora copr, requires
 # raising the test timeout
 VIR_TEST_DEBUG=1 %meson_test --no-suite syntax-check --timeout-multiplier 10
-
-%post libs
-%if 0%{?rhel} == 7
-/sbin/ldconfig
-%endif
-
-%postun libs
-%if 0%{?rhel} == 7
-/sbin/ldconfig
-%endif
 
 %pre daemon
 # 'libvirt' group is just to allow password-less polkit access to
@@ -1957,6 +1892,9 @@ exit 0
 
 
 %changelog
+* Tue Jun 01 2021 Cole Robinson <crobinso@redhat.com> - 7.4.0-1
+- Update to version 7.4.0
+
 * Tue May  4 2021 Daniel P. Berrangé <berrange@redhat.com> - 7.3.0-1
 - Update to 7.3.0 release
 - Remove libvirt-admin & libvirt-bash-completion subpackages
