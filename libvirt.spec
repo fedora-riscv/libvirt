@@ -197,7 +197,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 7.4.0
-Release: 1%{?dist}
+Release: 2%{?dist}
 License: LGPLv2+
 URL: https://libvirt.org/
 
@@ -1892,6 +1892,9 @@ exit 0
 
 
 %changelog
+* Mon Jun 07 2021 Cole Robinson <crobinso@redhat.com> - 7.4.0-2
+- Rebuild for xen 4.14
+
 * Tue Jun 01 2021 Cole Robinson <crobinso@redhat.com> - 7.4.0-1
 - Update to version 7.4.0
 
