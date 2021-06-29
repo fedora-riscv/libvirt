@@ -1,7 +1,6 @@
-From b776d049b8c89b033004ad9502270d4b255a1958 Mon Sep 17 00:00:00 2001
 From: Laine Stump <laine@redhat.com>
 Date: Thu, 21 Jan 2021 16:01:06 -0500
-Subject: [PATCH 1/2] build: support explicitly disabling netcf
+Subject: [PATCH] build: support explicitly disabling netcf
 
 placing "-Dnetcf=disabled" on the meson commandline was ignored,
 meaning that even with that option the build would get WITH_NETCF if
@@ -55,6 +54,3 @@ index b5164f68ed..e9d6d9f82e 100644
    'NLS': have_gnu_gettext_tools,
    'numactl': numactl_dep.found(),
    'openwsman': openwsman_dep.found(),
--- 
-2.29.2
-

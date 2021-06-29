@@ -219,7 +219,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 7.0.0
-Release: 4%{?dist}
+Release: 5%{?dist}
 License: LGPLv2+
 URL: https://libvirt.org/
 
@@ -228,7 +228,12 @@ URL: https://libvirt.org/
 %endif
 Source: https://libvirt.org/sources/%{?mainturl}libvirt-%{version}.tar.xz
 
+# Disable netcf
 Patch0001: 0001-build-support-explicitly-disabling-netcf.patch
+# Crash in udev driver populate_vendor (bz #1966851)
+Patch0002: 0002-node_device_udev-Serialize-access-to-pci_get_strings.patch
+# Fix CAP_SETPCAP syslog warning (bz #1924218)
+Patch0003: 0003-virSetUIDGIDWithCaps-Don-t-drop-CAP_SETPCAP-right-aw.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-config-network = %{version}-%{release}
@@ -1966,6 +1971,10 @@ exit 0
 
 
 %changelog
+* Tue Jun 29 2021 Cole Robinson <crobinso@redhat.com> - 7.0.0-5
+- Crash in udev driver populate_vendor (bz #1966851)
+- Fix CAP_SETPCAP syslog warning (bz #1924218)
+
 * Wed Feb 03 2021 Cole Robinson <aintdiscole@gmail.com> - 7.0.0-4
 - Increase meson test timeout to fix builds on s390x copr
 
