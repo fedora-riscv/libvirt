@@ -219,7 +219,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 7.0.0
-Release: 5%{?dist}
+Release: 6%{?dist}
 License: LGPLv2+
 URL: https://libvirt.org/
 
@@ -234,6 +234,8 @@ Patch0001: 0001-build-support-explicitly-disabling-netcf.patch
 Patch0002: 0002-node_device_udev-Serialize-access-to-pci_get_strings.patch
 # Fix CAP_SETPCAP syslog warning (bz #1924218)
 Patch0003: 0003-virSetUIDGIDWithCaps-Don-t-drop-CAP_SETPCAP-right-aw.patch
+# CVE-2021-3631 libvirt: insecure sVirt label generation (bz #1977760)
+Patch0004: 0004-security-fix-SELinux-label-generation-logic.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-config-network = %{version}-%{release}
@@ -1971,6 +1973,9 @@ exit 0
 
 
 %changelog
+* Fri Jul 02 2021 Cole Robinson <crobinso@redhat.com> - 7.0.0-6
+- CVE-2021-3631 libvirt: insecure sVirt label generation (bz #1977760)
+
 * Tue Jun 29 2021 Cole Robinson <crobinso@redhat.com> - 7.0.0-5
 - Crash in udev driver populate_vendor (bz #1966851)
 - Fix CAP_SETPCAP syslog warning (bz #1924218)
