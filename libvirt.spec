@@ -219,7 +219,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 7.0.0
-Release: 6%{?dist}
+Release: 7%{?dist}
 License: LGPLv2+
 URL: https://libvirt.org/
 
@@ -236,6 +236,13 @@ Patch0002: 0002-node_device_udev-Serialize-access-to-pci_get_strings.patch
 Patch0003: 0003-virSetUIDGIDWithCaps-Don-t-drop-CAP_SETPCAP-right-aw.patch
 # CVE-2021-3631 libvirt: insecure sVirt label generation (bz #1977760)
 Patch0004: 0004-security-fix-SELinux-label-generation-logic.patch
+# More CAP_SETPCAP warning fixes (bz #1924218)
+Patch0005: 0005-virSetUIDGIDWithCaps-Set-bounding-capabilities-only-.patch
+# Handle unknown firmware.json errors
+Patch0006: 0006-qemu_firmware-don-t-error-out-for-unknown-firmware-f.patch
+# CVE-2021-3667: Fix deadlock on virStoragePoolLookupByTargetPath failure
+# (bz #1986113)
+Patch0007: 0007-storage_driver-Unlock-object-on-ACL-fail-in-storageP.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-config-network = %{version}-%{release}
@@ -1973,6 +1980,12 @@ exit 0
 
 
 %changelog
+* Tue Jul 27 2021 Cole Robinson <crobinso@redhat.com> - 7.0.0-7
+- More CAP_SETPCAP warning fixes (bz #1924218)
+- Handle unknown firmware.json errors
+- CVE-2021-3667: Fix deadlock on virStoragePoolLookupByTargetPath failure
+  (bz #1986113)
+
 * Fri Jul 02 2021 Cole Robinson <crobinso@redhat.com> - 7.0.0-6
 - CVE-2021-3631 libvirt: insecure sVirt label generation (bz #1977760)
 
