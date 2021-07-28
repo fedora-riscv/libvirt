@@ -201,7 +201,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 7.5.0
-Release: 2%{?dist}
+Release: 3%{?dist}
 License: LGPLv2+
 URL: https://libvirt.org/
 
@@ -209,6 +209,10 @@ URL: https://libvirt.org/
     %define mainturl stable_updates/
 %endif
 Source: https://libvirt.org/sources/%{?mainturl}libvirt-%{version}.tar.xz
+
+# Not upstream, but already reviewed and acked for 7.6
+# https://listman.redhat.com/archives/libvir-list/2021-July/msg00823.html
+Patch1: 0001-qemu-block-Use-discard-unmap-for-the-copy-on-read-bl.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-config-network = %{version}-%{release}
@@ -1902,6 +1906,9 @@ exit 0
 
 
 %changelog
+* Wed Jul 28 2021 Richard W.M. Jones <rjones@redhat.com> - 7.5.0-3
+- Add fix for discard + copy-on-read affecting virt-v2v (RHBZ#1986509)
+
 * Thu Jul 22 2021 Fedora Release Engineering <releng@fedoraproject.org> - 7.5.0-2
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_35_Mass_Rebuild
 
