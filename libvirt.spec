@@ -206,7 +206,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 7.6.0
-Release: 2%{?dist}
+Release: 3%{?dist}
 License: LGPLv2+
 URL: https://libvirt.org/
 
@@ -1441,7 +1441,7 @@ fi
 %preun daemon-driver-secret
 %libvirt_daemon_systemd_preun virtsecretd
 
-%posttranstrans daemon-driver-secret
+%posttrans daemon-driver-secret
 %libvirt_daemon_perform_restart virtsecretd
 
 
@@ -2065,6 +2065,9 @@ exit 0
 
 
 %changelog
+* Tue Aug 31 2021 Daniel P. Berrangé <berrange@redhat.com> - 7.6.0-3
+- Fix repeated word in scriptlet name
+
 * Wed Aug  4 2021 Daniel P. Berrangé <berrange@redhat.com> - 7.6.0-2
 - Switch to use modular daemons by default
 
