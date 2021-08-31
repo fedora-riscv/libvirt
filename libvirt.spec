@@ -214,6 +214,8 @@ URL: https://libvirt.org/
     %define mainturl stable_updates/
 %endif
 Source: https://libvirt.org/sources/%{?mainturl}libvirt-%{version}.tar.xz
+Patch1: 0001-qemu-xen-add-missing-deps-on-virtlockd-virtlogd-sock.patch
+Patch2: 0002-tests-virstoragetest-remove-tests-without-backing-ty.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-config-network = %{version}-%{release}
@@ -2067,6 +2069,8 @@ exit 0
 %changelog
 * Tue Aug 31 2021 Daniel P. Berrangé <berrange@redhat.com> - 7.6.0-3
 - Fix repeated word in scriptlet name
+- Fix deps on virtlockd/virtlogd socket units
+- Fix test failure with newer QEMU
 
 * Wed Aug  4 2021 Daniel P. Berrangé <berrange@redhat.com> - 7.6.0-2
 - Switch to use modular daemons by default
