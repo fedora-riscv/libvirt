@@ -24,7 +24,7 @@
 %define arches_vbox             %{arches_x86}
 %define arches_ceph             %{arches_64bit}
 %define arches_zfs              %{arches_x86} %{power64} %{arm}
-%define arches_numactl          %{arches_x86} %{power64} aarch64
+%define arches_numactl          %{arches_x86} %{power64} aarch64 s390x
 %define arches_numad            %{arches_x86} %{power64} aarch64
 
 # The hypervisor drivers that run in libvirtd
@@ -205,8 +205,8 @@
 
 Summary: Library providing a simple virtualization API
 Name: libvirt
-Version: 7.6.0
-Release: 3%{?dist}
+Version: 7.7.0
+Release: 1%{?dist}
 License: LGPLv2+
 URL: https://libvirt.org/
 
@@ -214,8 +214,6 @@ URL: https://libvirt.org/
     %define mainturl stable_updates/
 %endif
 Source: https://libvirt.org/sources/%{?mainturl}libvirt-%{version}.tar.xz
-Patch1: 0001-qemu-xen-add-missing-deps-on-virtlockd-virtlogd-sock.patch
-Patch2: 0002-tests-virstoragetest-remove-tests-without-backing-ty.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-config-network = %{version}-%{release}
@@ -1462,9 +1460,9 @@ fi
 
 %if %{with_qemu}
 %post daemon-driver-qemu
-%if %{with_modular_daemons}
+    %if %{with_modular_daemons}
 %libvirt_daemon_systemd_post virtqemud
-%endif
+    %endif
 %libvirt_daemon_schedule_restart virtqemud
 
 %preun daemon-driver-qemu
@@ -1477,9 +1475,9 @@ fi
 
 %if %{with_lxc}
 %post daemon-driver-lxc
-%if %{with_modular_daemons}
+    %if %{with_modular_daemons}
 %libvirt_daemon_systemd_post virtlxcd
-%endif
+    %endif
 %libvirt_daemon_schedule_restart virtlxcd
 
 %preun daemon-driver-lxc
@@ -1492,9 +1490,9 @@ fi
 
 %if %{with_vbox}
 %post daemon-driver-vbox
-%if %{with_modular_daemons}
+    %if %{with_modular_daemons}
 %libvirt_daemon_systemd_post virtvboxd
-%endif
+    %endif
 %libvirt_daemon_schedule_restart virtvboxd
 
 %preun daemon-driver-vbox
@@ -1507,9 +1505,9 @@ fi
 
 %if %{with_libxl}
 %post daemon-driver-libxl
-%if %{with_modular_daemons}
+    %if %{with_modular_daemons}
 %libvirt_daemon_systemd_post virtxend
-%endif
+    %endif
 %libvirt_daemon_schedule_restart virtxend
 
 %preun daemon-driver-libxl
@@ -2067,6 +2065,9 @@ exit 0
 
 
 %changelog
+* Thu Sep  2 2021 Daniel P. Berrangé <berrange@redhat.com> - 7.7.0-1
+- Update to 7.7.0 release
+
 * Tue Aug 31 2021 Daniel P. Berrangé <berrange@redhat.com> - 7.6.0-3
 - Fix repeated word in scriptlet name
 - Fix deps on virtlockd/virtlogd socket units
