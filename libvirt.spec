@@ -206,7 +206,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 7.6.0
-Release: 2%{?dist}
+Release: 3%{?dist}
 License: LGPLv2+
 URL: https://libvirt.org/
 
@@ -214,6 +214,7 @@ URL: https://libvirt.org/
     %define mainturl stable_updates/
 %endif
 Source: https://libvirt.org/sources/%{?mainturl}libvirt-%{version}.tar.xz
+Patch1: 0001-qemu-xen-add-missing-deps-on-virtlockd-virtlogd-sock.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-config-network = %{version}-%{release}
@@ -1441,7 +1442,7 @@ fi
 %preun daemon-driver-secret
 %libvirt_daemon_systemd_preun virtsecretd
 
-%posttranstrans daemon-driver-secret
+%posttrans daemon-driver-secret
 %libvirt_daemon_perform_restart virtsecretd
 
 
@@ -2065,6 +2066,10 @@ exit 0
 
 
 %changelog
+* Wed Sep  8 2021 Daniel P. Berrangé <berrange@redhat.com> - 7.6.0-3
+- Fix bad post transaction script tag
+- Fix deps on virtlockd/virtlogd socket units (rhbz#2002279)
+
 * Wed Aug  4 2021 Daniel P. Berrangé <berrange@redhat.com> - 7.6.0-2
 - Switch to use modular daemons by default
 
