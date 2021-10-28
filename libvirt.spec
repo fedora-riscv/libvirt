@@ -206,7 +206,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 7.8.0
-Release: 1%{?dist}
+Release: 2%{?dist}
 License: LGPLv2+
 URL: https://libvirt.org/
 
@@ -2065,6 +2065,9 @@ exit 0
 
 
 %changelog
+* Thu Oct 28 2021 Richard W.M. Jones <rjones@redhat.com> - 7.8.0-2
+- Bump and rebuild for fixed glusterfs on arm (RHBZ#2018182)
+
 * Fri Oct  1 2021 Daniel P. Berrangé <berrange@redhat.com> - 7.8.0-1
 - Update to 7.8.0 release
 
