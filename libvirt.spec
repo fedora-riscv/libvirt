@@ -205,8 +205,8 @@
 
 Summary: Library providing a simple virtualization API
 Name: libvirt
-Version: 7.8.0
-Release: 2%{?dist}
+Version: 7.9.0
+Release: 1%{?dist}
 License: LGPLv2+
 URL: https://libvirt.org/
 
@@ -1868,7 +1868,7 @@ exit 0
 %config(noreplace) %{_sysconfdir}/logrotate.d/libvirtd.qemu
 %ghost %dir %{_rundir}/libvirt/qemu/
 %dir %attr(0751, %{qemu_user}, %{qemu_group}) %{_localstatedir}/lib/libvirt/qemu/
-%dir %attr(0750, %{qemu_user}, %{qemu_group}) %{_localstatedir}/cache/libvirt/qemu/
+%dir %attr(0750, root, root) %{_localstatedir}/cache/libvirt/qemu/
 %{_datadir}/augeas/lenses/libvirtd_qemu.aug
 %{_datadir}/augeas/lenses/tests/test_libvirtd_qemu.aug
 %{_libdir}/%{name}/connection-driver/libvirt_driver_qemu.so
@@ -2065,6 +2065,9 @@ exit 0
 
 
 %changelog
+* Tue Nov  2 2021 Daniel P. Berrangé <berrange@redhat.com> - 7.9.0-1
+- Update to 7.9.0 release
+
 * Thu Oct 28 2021 Richard W.M. Jones <rjones@redhat.com> - 7.8.0-2
 - Bump and rebuild for fixed glusterfs on arm (RHBZ#2018182)
 
