@@ -1,0 +1,33 @@
+From 010613cfd8dae6d85602a84c5c95b2d441e1b3d1 Mon Sep 17 00:00:00 2001
+From: Michal Privoznik <mprivozn@redhat.com>
+Date: Mon, 29 Nov 2021 10:20:05 +0100
+Subject: [PATCH 2/2] wireshark: Drop needless comment in dissect_xdr_bytes()
+
+In the dissect_xdr_bytes() there's a comment that the string
+allocated by xdr_bytes() can't be freed using xdr_free(). Well,
+that is expected because xdr_bytes() used plain calloc() AND the
+string is not an XDR struct but plain 'char *' type. Passing it
+to xdr_free() must result in weird things happening.
+
+Signed-off-by: Michal Privoznik <mprivozn@redhat.com>
+Reviewed-by: Jiri Denemark <jdenemar@redhat.com>
+---
+ tools/wireshark/src/packet-libvirt.c | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/tools/wireshark/src/packet-libvirt.c b/tools/wireshark/src/packet-libvirt.c
+index cb922b8070..eeacbcdf0e 100644
+--- a/tools/wireshark/src/packet-libvirt.c
++++ b/tools/wireshark/src/packet-libvirt.c
+@@ -195,8 +195,6 @@ dissect_xdr_bytes(tvbuff_t *tvb, proto_tree *tree, XDR *xdrs, int hf,
+         const char *s = tvb_bytes_to_str(wmem_packet_scope(), tvb, start, len);
+ 
+         proto_tree_add_bytes_format_value(tree, hf, tvb, start, len, NULL, "%s", s);
+-        /* Seems I can't call xdr_free() for this case.
+-           It will raises SEGV by referencing out of bounds call stack */
+         free(val);
+         return TRUE;
+     } else {
+-- 
+2.33.1
+
