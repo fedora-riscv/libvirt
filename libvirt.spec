@@ -219,7 +219,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 7.0.0
-Release: 7%{?dist}
+Release: 8%{?dist}
 License: LGPLv2+
 URL: https://libvirt.org/
 
@@ -243,6 +243,10 @@ Patch0006: 0006-qemu_firmware-don-t-error-out-for-unknown-firmware-f.patch
 # CVE-2021-3667: Fix deadlock on virStoragePoolLookupByTargetPath failure
 # (bz #1986113)
 Patch0007: 0007-storage_driver-Unlock-object-on-ACL-fail-in-storageP.patch
+
+# Wireshark changed its public API
+Patch0008: 0008-wireshark-Switch-to-tvb_bytes_to_str.patch
+Patch0009: 0009-wireshark-Drop-needless-comment-in-dissect_xdr_bytes.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-config-network = %{version}-%{release}
@@ -1980,6 +1984,9 @@ exit 0
 
 
 %changelog
+* Mon Dec 13 2021 Daniel P. Berrangé <berrange@redhat.com> - 7.0.0-8
+- Rebuild for changed wireshark soname (rhbz#2031322)
+
 * Tue Jul 27 2021 Cole Robinson <crobinso@redhat.com> - 7.0.0-7
 - More CAP_SETPCAP warning fixes (bz #1924218)
 - Handle unknown firmware.json errors
