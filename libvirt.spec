@@ -206,7 +206,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 7.6.0
-Release: 3%{?dist}
+Release: 4%{?dist}
 License: LGPLv2+
 URL: https://libvirt.org/
 
@@ -215,6 +215,9 @@ URL: https://libvirt.org/
 %endif
 Source: https://libvirt.org/sources/%{?mainturl}libvirt-%{version}.tar.xz
 Patch1: 0001-qemu-xen-add-missing-deps-on-virtlockd-virtlogd-sock.patch
+Patch2: 0002-wireshark-Switch-to-tvb_bytes_to_str.patch
+Patch3: 0003-wireshark-Drop-needless-comment-in-dissect_xdr_bytes.patch
+Patch4: 0004-tests-virstoragetest-remove-tests-without-backing-ty.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-config-network = %{version}-%{release}
@@ -2066,6 +2069,9 @@ exit 0
 
 
 %changelog
+* Mon Dec 13 2021 Daniel P. Berrangé <berrange@redhat.com> - 7.6.0-4
+- Rebuild for changed wireshark soname (rhbz#2031316)
+
 * Wed Sep  8 2021 Daniel P. Berrangé <berrange@redhat.com> - 7.6.0-3
 - Fix bad post transaction script tag
 - Fix deps on virtlockd/virtlogd socket units (rhbz#2002279)
