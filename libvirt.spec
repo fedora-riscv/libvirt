@@ -206,7 +206,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 7.6.0
-Release: 4%{?dist}
+Release: 5%{?dist}
 License: LGPLv2+
 URL: https://libvirt.org/
 
@@ -1263,28 +1263,32 @@ mv $RPM_BUILD_ROOT%{_datadir}/systemtap/tapset/libvirt_qemu_probes.stp \
 # raising the test timeout
 VIR_TEST_DEBUG=1 %meson_test --no-suite syntax-check --timeout-multiplier 10
 
-%global libvirt_daemon_schedule_restart() mkdir -p %{_localstatedir}/lib/rpm-state/libvirt || : \
+%define libvirt_daemon_schedule_restart() mkdir -p %{_localstatedir}/lib/rpm-state/libvirt || : \
 /bin/systemctl is-active %1.service 1>/dev/null 2>&1 && \
   touch %{_localstatedir}/lib/rpm-state/libvirt/restart-%1 || :
 
-%global libvirt_daemon_finish_restart() rm -f %{_localstatedir}/lib/rpm-state/libvirt/restart-%1 \
+%define libvirt_daemon_finish_restart() rm -f %{_localstatedir}/lib/rpm-state/libvirt/restart-%1 \
 rmdir %{_localstatedir}/lib/rpm-state/libvirt 2>/dev/null || :
 
-%global libvirt_daemon_needs_restart() -f %{_localstatedir}/lib/rpm-state/libvirt/restart-%1
+%define libvirt_daemon_needs_restart() -f %{_localstatedir}/lib/rpm-state/libvirt/restart-%1
 
-%global libvirt_daemon_perform_restart() if test %libvirt_daemon_needs_restart %1 \
+%define libvirt_daemon_perform_restart() if test %libvirt_daemon_needs_restart %1 \
 then \
   /bin/systemctl try-restart %1.service >/dev/null 2>&1 || : \
 fi \
 %libvirt_daemon_finish_restart %1
 
-%global libvirt_daemon_systemd_post() %systemd_post %1.socket %1-ro.socket %1-admin.socket %1.service
+# For daemons with only UNIX sockets
+%define libvirt_daemon_systemd_post() %systemd_post %1.socket %1-ro.socket %1-admin.socket %1.service
+%define libvirt_daemon_systemd_preun() %systemd_preun %1.service %1-ro.socket %1-admin.socket %1.socket
 
-%global libvirt_daemon_systemd_post_inet() %systemd_post %1.socket %1-ro.socket %1-admin.socket %1-tls.socket %1-tcp.socket %1.service
+# For daemons with UNIX and INET sockets
+%define libvirt_daemon_systemd_post_inet() %systemd_post %1.socket %1-ro.socket %1-admin.socket %1-tls.socket %1-tcp.socket %1.service
+%define libvirt_daemon_systemd_preun_inet() %systemd_preun %1.service %1-ro.socket %1-admin.socket %1-tls.socket %1-tcp.socket %1.socket
 
-%global libvirt_daemon_systemd_preun() %systemd_preun %1.service %1-ro.socket %1-admin.socket %1.socket
-
-%global libvirt_daemon_systemd_preun_inet() %systemd_preun %1.service %1-ro.socket %1-admin.socket %1-tls.socket %1-tcp.socket %1.socket
+# For daemons with only UNIX sockets and no unprivileged read-only access
+%define libvirt_daemon_systemd_post_priv() %systemd_post %1.socket %1-admin.socket %1.service
+%define libvirt_daemon_systemd_preun_priv() %systemd_preun %1.service %1-admin.socket %1.socket
 
 %pre daemon
 # 'libvirt' group is just to allow password-less polkit access to
@@ -1295,8 +1299,8 @@ getent group libvirt >/dev/null || groupadd -r libvirt
 exit 0
 
 %post daemon
-%libvirt_daemon_systemd_post virtlogd
-%libvirt_daemon_systemd_post virtlockdd
+%libvirt_daemon_systemd_post_priv virtlogd
+%libvirt_daemon_systemd_post_priv virtlockd
 %if %{with_modular_daemons}
 %libvirt_daemon_systemd_post_inet virtproxyd
 %else
@@ -1312,8 +1316,8 @@ exit 0
 
 %libvirt_daemon_systemd_preun_inet libvirtd
 %libvirt_daemon_systemd_preun_inet virtproxyd
-%libvirt_daemon_systemd_preun virtlogd
-%libvirt_daemon_systemd_preun virtlockdd
+%libvirt_daemon_systemd_preun_priv virtlogd
+%libvirt_daemon_systemd_preun_priv virtlockd
 
 %postun daemon
 /bin/systemctl daemon-reload >/dev/null 2>&1 || :
@@ -2069,6 +2073,9 @@ exit 0
 
 
 %changelog
+* Thu Dec 16 2021 Daniel P. Berrangé <berrange@redhat.com> - 7.6.0-5
+- Fix mistakes in post scripts causing uninstall errors
+
 * Mon Dec 13 2021 Daniel P. Berrangé <berrange@redhat.com> - 7.6.0-4
 - Rebuild for changed wireshark soname (rhbz#2031316)
 
