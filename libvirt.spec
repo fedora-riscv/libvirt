@@ -210,7 +210,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 7.10.0
-Release: 1%{?dist}
+Release: 2%{?dist}
 License: LGPLv2+
 URL: https://libvirt.org/
 
@@ -2071,6 +2071,9 @@ exit 0
 
 
 %changelog
+* Tue Jan 11 2022 Richard W.M. Jones <rjones@redhat.com> - 7.10.0-2
+- Bump release and rebuild for new xen
+
 * Wed Dec  1 2021 Daniel P. Berrangé <berrange@redhat.com> - 7.10.0-1
 - Update to 7.10.0 release
 
