@@ -210,7 +210,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 8.0.0
-Release: 1%{?dist}
+Release: 2%{?dist}
 License: LGPLv2+
 URL: https://libvirt.org/
 
@@ -2070,6 +2070,9 @@ exit 0
 
 
 %changelog
+* Thu Jan 20 2022 Fedora Release Engineering <releng@fedoraproject.org> - 8.0.0-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_36_Mass_Rebuild
+
 * Fri Jan 14 2022 Cole Robinson <crobinso@redhat.com> - 8.0.0-1
 - Update to version 8.0.0
 
