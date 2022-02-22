@@ -210,7 +210,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 8.0.0
-Release: 2%{?dist}
+Release: 3%{?dist}
 License: LGPLv2+
 URL: https://libvirt.org/
 
@@ -218,6 +218,11 @@ URL: https://libvirt.org/
     %define mainturl stable_updates/
 %endif
 Source: https://libvirt.org/sources/%{?mainturl}libvirt-%{version}.tar.xz
+
+# Fix virt-install bug:
+# ERROR    internal error: cannot parse process status data for pid
+# Upstream commit 105dace22cc7b5
+Patch1: 0001-Revert-report-error-when-virProcessGetStatInfo-is-un.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-config-network = %{version}-%{release}
@@ -2070,6 +2075,9 @@ exit 0
 
 
 %changelog
+* Tue Feb 22 2022 Richard W.M. Jones <rjones@redhat.com> - 8.0.0-3
+- Include upstream patch which fixes virt-install bug.
+
 * Thu Jan 20 2022 Fedora Release Engineering <releng@fedoraproject.org> - 8.0.0-2
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_36_Mass_Rebuild
 
