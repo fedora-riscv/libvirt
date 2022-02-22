@@ -223,6 +223,9 @@ Source: https://libvirt.org/sources/%{?mainturl}libvirt-%{version}.tar.xz
 # ERROR    internal error: cannot parse process status data for pid
 # Upstream commit 105dace22cc7b5
 Patch1: 0001-Revert-report-error-when-virProcessGetStatInfo-is-un.patch
+# Fix build with newest libxslt
+# Upstream commit 54814c87f3706c
+Patch2: 0001-docs-Fix-template-matching-in-page.xsl.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-config-network = %{version}-%{release}
