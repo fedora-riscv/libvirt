@@ -228,7 +228,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 8.1.0
-Release: 1%{?dist}
+Release: 2%{?dist}
 License: LGPLv2+
 URL: https://libvirt.org/
 
@@ -236,6 +236,7 @@ URL: https://libvirt.org/
     %define mainturl stable_updates/
 %endif
 Source: https://libvirt.org/sources/%{?mainturl}libvirt-%{version}.tar.xz
+Patch: 0001-qemu-segmentation-fault-in-virtqemud-executing-qemuD.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-config-network = %{version}-%{release}
@@ -2124,6 +2125,9 @@ exit 0
 
 
 %changelog
+* Thu Mar  3 2022 Daniel P. Berrangé <berrange@redhat.com> - 8.1.0-2
+- Fix crash undefining VM without loader (rhbz#2060412)
+
 * Tue Mar 01 2022 Cole Robinson <crobinso@redhat.com> - 8.1.0-1
 - Update to version 8.1.0
 
