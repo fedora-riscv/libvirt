@@ -227,8 +227,8 @@
 
 Summary: Library providing a simple virtualization API
 Name: libvirt
-Version: 8.1.0
-Release: 2%{?dist}
+Version: 8.2.0
+Release: 1%{?dist}
 License: LGPLv2+
 URL: https://libvirt.org/
 
@@ -236,7 +236,6 @@ URL: https://libvirt.org/
     %define mainturl stable_updates/
 %endif
 Source: https://libvirt.org/sources/%{?mainturl}libvirt-%{version}.tar.xz
-Patch: 0001-qemu-segmentation-fault-in-virtqemud-executing-qemuD.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-config-network = %{version}-%{release}
@@ -1734,7 +1733,6 @@ exit 0
 %{_mandir}/man8/virtlogd.8*
 %{_mandir}/man8/virtlockd.8*
 %{_mandir}/man8/virtproxyd.8*
-%{_mandir}/man7/virkey*.7*
 
 %{_bindir}/virt-host-validate
 %{_bindir}/virt-admin
@@ -2040,6 +2038,7 @@ exit 0
 %{_mandir}/man1/virt-xml-validate.1*
 %{_mandir}/man1/virt-pki-query-dn.1*
 %{_mandir}/man1/virt-pki-validate.1*
+%{_mandir}/man7/virkey*.7*
 %{_bindir}/virsh
 %{_bindir}/virt-xml-validate
 %{_bindir}/virt-pki-query-dn
@@ -2125,6 +2124,9 @@ exit 0
 
 
 %changelog
+* Fri Apr 01 2022 Cole Robinson <crobinso@redhat.com> - 8.2.0-1
+- Update to version 8.2.0
+
 * Thu Mar  3 2022 Daniel P. Berrangé <berrange@redhat.com> - 8.1.0-2
 - Fix crash undefining VM without loader (rhbz#2060412)
 
