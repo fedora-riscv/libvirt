@@ -227,7 +227,7 @@
 
 Summary: Library providing a simple virtualization API
 Name: libvirt
-Version: 8.2.0
+Version: 8.3.0
 Release: 1%{?dist}
 License: LGPLv2+
 URL: https://libvirt.org/
@@ -2124,6 +2124,9 @@ exit 0
 
 
 %changelog
+* Mon May 02 2022 Cole Robinson <crobinso@redhat.com> - 8.3.0-1
+- Update to version 8.3.0
+
 * Fri Apr 01 2022 Cole Robinson <crobinso@redhat.com> - 8.2.0-1
 - Update to version 8.2.0
 
