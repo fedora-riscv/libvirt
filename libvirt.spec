@@ -21,6 +21,9 @@
 %define arches_systemtap_64bit  %{arches_64bit}
 %define arches_dmidecode        %{arches_x86}
 %define arches_xen              %{arches_x86} aarch64
+%if 0%{?fedora} >= 36
+%define arches_xen              x86_64 aarch64
+%endif
 %define arches_vbox             %{arches_x86}
 %define arches_ceph             %{arches_64bit}
 %define arches_zfs              %{arches_x86} %{power64} %{arm}
@@ -228,7 +231,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 8.1.0
-Release: 2%{?dist}
+Release: 3%{?dist}
 License: LGPLv2+
 URL: https://libvirt.org/
 
@@ -2125,6 +2128,9 @@ exit 0
 
 
 %changelog
+* Sat Jun 11 2022 Cole Robinson <crobinso@redhat.com> - 8.1.0-3
+- Adjust for Xen dropping 32bit arches
+
 * Thu Mar  3 2022 Daniel P. Berrangé <berrange@redhat.com> - 8.1.0-2
 - Fix crash undefining VM without loader (rhbz#2060412)
 
