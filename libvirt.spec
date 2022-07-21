@@ -22,7 +22,7 @@
 %define arches_dmidecode        %{arches_x86}
 %define arches_xen              %{arches_x86} aarch64
 %if 0%{?fedora} >= 36
-%define arches_xen              x86_64 aarch64
+    %define arches_xen              x86_64 aarch64
 %endif
 %define arches_vbox             %{arches_x86}
 %define arches_ceph             %{arches_64bit}
@@ -230,8 +230,8 @@
 
 Summary: Library providing a simple virtualization API
 Name: libvirt
-Version: 8.4.0
-Release: 2%{?dist}
+Version: 8.5.0
+Release: 1%{?dist}
 License: LGPLv2+
 URL: https://libvirt.org/
 
@@ -2127,6 +2127,9 @@ exit 0
 
 
 %changelog
+* Thu Jul 21 2022 Cole Robinson <crobinso@redhat.com> - 8.5.0-1
+- Update to version 8.5.0
+
 * Sat Jun 11 2022 Cole Robinson <crobinso@redhat.com> - 8.4.0-2
 - Adjust for Xen dropping 32bit arches
 
