@@ -240,6 +240,10 @@ URL: https://libvirt.org/
 %endif
 Source: https://libvirt.org/sources/%{?mainturl}libvirt-%{version}.tar.xz
 
+# Fix build with glibc 2.36
+Patch0001: 0001-lxc-containter-fix-build-with-glibc-2.36.patch
+Patch0002: 0002-virfile-Fix-build-with-glibc-2.36.patch
+
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-config-network = %{version}-%{release}
 Requires: libvirt-daemon-config-nwfilter = %{version}-%{release}
