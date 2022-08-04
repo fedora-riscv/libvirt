@@ -1,4 +1,4 @@
-From 3b6a3cfd76832efd504bb3e868675e0f27e16c3a Mon Sep 17 00:00:00 2001
+From c0d9adf220dc0d223330a7bac37b174132d330ba Mon Sep 17 00:00:00 2001
 From: Cole Robinson <crobinso@redhat.com>
 Date: Mon, 1 Aug 2022 15:24:01 -0400
 Subject: [PATCH] virfile: Fix build with glibc 2.36
@@ -15,22 +15,25 @@ done in llvm:
 
 https://reviews.llvm.org/rGb379129c4beb3f26223288627a1291739f33af02
 
+Reviewed-by: Erik Skultety <eskultet@redhat.com>
 Signed-off-by: Cole Robinson <crobinso@redhat.com>
 ---
- src/util/virfile.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ src/util/virfile.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
 diff --git a/src/util/virfile.c b/src/util/virfile.c
-index 99da058db3..65d6d2a701 100644
+index 99da058db3..ce541b8946 100644
 --- a/src/util/virfile.c
 +++ b/src/util/virfile.c
-@@ -71,7 +71,9 @@
+@@ -71,7 +71,11 @@
  # endif
  # include <sys/ioctl.h>
  # include <linux/cdrom.h>
 -# include <linux/fs.h>
++/* These come from linux/fs.h, but that header conflicts with
++ * sys/mount.h on glibc 2.36+ */
 +# define FS_IOC_GETFLAGS _IOR('f', 1, long)
-+# define FS_IOC_SETFLAGS _IOR('f', 2, long)
++# define FS_IOC_SETFLAGS _IOW('f', 2, long)
 +# define FS_NOCOW_FL 0x00800000
  #endif
  

@@ -1,4 +1,4 @@
-From de63f9ca622e25df97ca926d7e409d074499fcf6 Mon Sep 17 00:00:00 2001
+From 9493c9b79dc541ec9e0fd73c6d87bdf8d30aaa90 Mon Sep 17 00:00:00 2001
 From: Cole Robinson <crobinso@redhat.com>
 Date: Mon, 1 Aug 2022 15:20:38 -0400
 Subject: [PATCH] lxc: containter: fix build with glibc 2.36
@@ -13,6 +13,7 @@ linux/mount.h.
 linux/fs.h isn't required here though. glibc sys/mount.h has had
 MS_MOVE since 2.12 in 2010
 
+Reviewed-by: Erik Skultety <eskultet@redhat.com>
 Signed-off-by: Cole Robinson <crobinso@redhat.com>
 ---
  src/lxc/lxc_container.c | 3 ---
