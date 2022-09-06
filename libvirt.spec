@@ -234,8 +234,8 @@
 
 Summary: Library providing a simple virtualization API
 Name: libvirt
-Version: 8.6.0
-Release: 3%{?dist}
+Version: 8.7.0
+Release: 1%{?dist}
 License: LGPLv2+
 URL: https://libvirt.org/
 
@@ -243,10 +243,6 @@ URL: https://libvirt.org/
     %define mainturl stable_updates/
 %endif
 Source: https://libvirt.org/sources/%{?mainturl}libvirt-%{version}.tar.xz
-
-# Fix build with glibc 2.36
-Patch0001: 0001-lxc-containter-fix-build-with-glibc-2.36.patch
-Patch0002: 0002-virfile-Fix-build-with-glibc-2.36.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-config-network = %{version}-%{release}
@@ -1520,18 +1516,12 @@ then
         # own the sockets again when it comes back up. Thus we must
         # do this particular ordering, so that we get libvirtd
         # running with socket activation in use
-        /bin/systemctl is-active libvirtd.service 1>/dev/null 2>&1
-        if test $? = 0
-        then
-            /bin/systemctl stop libvirtd.service >/dev/null 2>&1 || :
-
-            /bin/systemctl try-restart \
-                    libvirtd.socket \
-                    libvirtd-ro.socket \
-                    libvirtd-admin.socket >/dev/null 2>&1 || :
-
-            /bin/systemctl start libvirtd.service >/dev/null 2>&1 || :
-        fi
+        /bin/systemctl stop libvirtd.service >/dev/null 2>&1 || :
+        /bin/systemctl try-restart \
+                libvirtd.socket \
+                libvirtd-ro.socket \
+                libvirtd-admin.socket >/dev/null 2>&1 || :
+        /bin/systemctl start libvirtd.service >/dev/null 2>&1 || :
     fi
 fi
 
@@ -2417,7 +2407,11 @@ exit 0
 %{mingw64_mandir}/man7/virkey*.7*
 %endif
 
+
 %changelog
+* Tue Sep 06 2022 Cole Robinson <crobinso@redhat.com> - 8.7.0-1
+- Update to version 8.7.0
+
 * Tue Aug  9 2022 Daniel P. Berrangé <berrange@redhat.com> - 8.1.0-3
 - Pull in mingw sub-packages
 
