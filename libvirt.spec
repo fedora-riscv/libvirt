@@ -235,7 +235,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 8.6.0
-Release: 3%{?dist}
+Release: 4%{?dist}
 License: LGPLv2+
 URL: https://libvirt.org/
 
@@ -482,7 +482,11 @@ Requires: dbus
 # For uid creation during pre
 Requires(pre): shadow-utils
 # Needed by /usr/libexec/libvirt-guests.sh script.
+%if 0%{?fedora} >= 37
+Requires: gettext-runtime
+%else
 Requires: gettext
+%endif
 
 # Ensure smooth upgrades
 Obsoletes: libvirt-admin < 7.3.0
@@ -2418,6 +2422,9 @@ exit 0
 %endif
 
 %changelog
+* Mon Oct 17 2022 Jens Petersen <petersen@redhat.com> - 8.6.0-4
+- F37 libvirt-daemon: depend on gettext-runtime instead of gettext (#2117209)
+
 * Tue Aug  9 2022 Daniel P. Berrangé <berrange@redhat.com> - 8.1.0-3
 - Pull in mingw sub-packages
 
