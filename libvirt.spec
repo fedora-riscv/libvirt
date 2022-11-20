@@ -235,7 +235,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 8.6.0
-Release: 4%{?dist}
+Release: 5%{?dist}
 License: LGPLv2+
 URL: https://libvirt.org/
 
@@ -2422,6 +2422,9 @@ exit 0
 %endif
 
 %changelog
+* Sun Nov 20 2022 Cole Robinson <crobinso@redhat.com> - 8.6.0-5
+- Rebuild for wireshark soname bump
+
 * Mon Oct 17 2022 Jens Petersen <petersen@redhat.com> - 8.6.0-4
 - F37 libvirt-daemon: depend on gettext-runtime instead of gettext (#2117209)
 
