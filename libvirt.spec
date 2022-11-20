@@ -243,6 +243,7 @@ URL: https://libvirt.org/
     %define mainturl stable_updates/
 %endif
 Source: https://libvirt.org/sources/%{?mainturl}libvirt-%{version}.tar.xz
+Patch: 0001-tests-Fix-libxlxml2domconfigtest-with-latest-xen.patch
 
 # Fix build with glibc 2.36
 Patch0001: 0001-lxc-containter-fix-build-with-glibc-2.36.patch
@@ -2424,6 +2425,7 @@ exit 0
 %changelog
 * Sun Nov 20 2022 Cole Robinson <crobinso@redhat.com> - 8.6.0-5
 - Rebuild for wireshark soname bump
+- Fix libxl tests on aarch64
 
 * Mon Oct 17 2022 Jens Petersen <petersen@redhat.com> - 8.6.0-4
 - F37 libvirt-daemon: depend on gettext-runtime instead of gettext (#2117209)
