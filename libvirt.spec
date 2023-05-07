@@ -229,7 +229,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 9.0.0
-Release: 2%{?dist}
+Release: 3%{?dist}
 License: LGPLv2+
 URL: https://libvirt.org/
 
@@ -237,6 +237,11 @@ URL: https://libvirt.org/
     %define mainturl stable_updates/
 %endif
 Source: https://libvirt.org/sources/%{?mainturl}libvirt-%{version}.tar.xz
+
+# Fix 'Tray of device is not open' error when changing CDROM (bz #2163117)
+Patch0001: 0001-qemuProcessRefreshDisks-Don-t-skip-filling-of-disk-i.patch
+# Fix curl API deprecation error
+Patch0002: 0002-ch-use-CURLOPT_UPLOAD-instead-of-CURLOPT_PUT.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-config-network = %{version}-%{release}
@@ -2310,6 +2315,10 @@ exit 0
 
 
 %changelog
+* Sun May 07 2023 Cole Robinson <crobinso@redhat.com> - 9.0.0-3
+- Fix 'Tray of device is not open' error when changing CDROM (bz #2163117)
+- Fix curl API deprecation error
+
 * Thu Jan 19 2023 Fedora Release Engineering <releng@fedoraproject.org> - 9.0.0-2
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_38_Mass_Rebuild
 

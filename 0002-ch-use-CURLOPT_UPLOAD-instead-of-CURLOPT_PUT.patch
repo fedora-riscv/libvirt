@@ -1,0 +1,39 @@
+From: =?UTF-8?q?Daniel=20P=2E=20Berrang=C3=A9?= <berrange@redhat.com>
+Date: Wed, 18 Jan 2023 09:45:52 +0000
+Subject: [PATCH] ch: use CURLOPT_UPLOAD instead of CURLOPT_PUT
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Content-type: text/plain
+
+The CURLOPT_PUT constant causes a deprecation warning when compiling on
+Alpine Edge.  The docs indicate it is deprecated since 7.2.1
+
+  https://curl.se/libcurl/c/CURLOPT_PUT.html
+
+Since 7.87 the deprecation is now exposed at build time via a compiler
+warning.
+
+We already use CURLOPT_UPLOAD in the ESX driver, so this brings the CH
+driver into line.
+
+Reviewed-by: Michal Privoznik <mprivozn@redhat.com>
+Signed-off-by: Daniel P. Berrangé <berrange@redhat.com>
+(cherry picked from commit 9cd70fb25cad171e415fb05a4e01f244304c602e)
+---
+ src/ch/ch_monitor.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/ch/ch_monitor.c b/src/ch/ch_monitor.c
+index 8d8654332f..7b8f0a8077 100644
+--- a/src/ch/ch_monitor.c
++++ b/src/ch/ch_monitor.c
+@@ -660,7 +660,7 @@ virCHMonitorPutNoContent(virCHMonitor *mon, const char *endpoint)
+ 
+     curl_easy_setopt(mon->handle, CURLOPT_UNIX_SOCKET_PATH, mon->socketpath);
+     curl_easy_setopt(mon->handle, CURLOPT_URL, url);
+-    curl_easy_setopt(mon->handle, CURLOPT_PUT, true);
++    curl_easy_setopt(mon->handle, CURLOPT_UPLOAD, 1L);
+     curl_easy_setopt(mon->handle, CURLOPT_HTTPHEADER, NULL);
+ 
+     responseCode = virCHMonitorCurlPerform(mon->handle);
