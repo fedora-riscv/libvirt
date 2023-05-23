@@ -173,6 +173,10 @@
         %define with_numad    0%{!?_without_numad:1}
     %endif
 %endif
+%if 0%{?fedora} >= 39
+    # numad is retired in fedora 39+, upstream is dead
+    %define with_numad        0
+%endif
 
 %ifarch %{arches_dmidecode}
     %define with_dmidecode 0%{!?_without_dmidecode:1}
