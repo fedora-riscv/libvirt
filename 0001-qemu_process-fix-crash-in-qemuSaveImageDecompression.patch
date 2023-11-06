@@ -1,0 +1,34 @@
+From: Pavel Hrdina <phrdina@redhat.com>
+Date: Fri, 3 Nov 2023 14:03:55 +0100
+Subject: [PATCH] qemu_process: fix crash in qemuSaveImageDecompressionStart
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Content-type: text/plain
+
+Commit changing the code to allow passing NULL as @data into
+qemuSaveImageDecompressionStart() was not correct as it left the
+original call into the function as well.
+
+Introduced-by: 2f3e582a1ac1008eba8d43c751cdba8712dd1614
+Fixes: https://bugzilla.redhat.com/show_bug.cgi?id=2247754
+Signed-off-by: Pavel Hrdina <phrdina@redhat.com>
+Reviewed-by: Ján Tomko <jtomko@redhat.com>
+---
+ src/qemu/qemu_process.c | 3 ---
+ 1 file changed, 3 deletions(-)
+
+diff --git a/src/qemu/qemu_process.c b/src/qemu/qemu_process.c
+index 1ef032dbd2..b9267d8699 100644
+--- a/src/qemu/qemu_process.c
++++ b/src/qemu/qemu_process.c
+@@ -8208,9 +8208,6 @@ qemuProcessStartWithMemoryState(virConnectPtr conn,
+         }
+     }
+ 
+-    if (qemuSaveImageDecompressionStart(data, fd, &intermediatefd, &errbuf, &cmd) < 0)
+-        return -1;
+-
+     /* No cookie means libvirt which saved the domain was too old to mess up
+      * the CPU definitions.
+      */
