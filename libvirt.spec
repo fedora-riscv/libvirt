@@ -259,6 +259,7 @@ Patch: 0004-virxml-include-libxml-xmlsave.h-for-xmlIndentTreeOut.patch
 Patch: 0005-virXMLParseHelper-Store-XML-parsing-flags-in-a-varia.patch
 Patch: 0006-virxml-Introduce-parsing-APIs-that-keep-indentation.patch
 Patch: 0007-lib-Replace-xmlKeepBlanksDefault-with-virXMLParseWit.patch
+Patch: 0008-lib-Replace-qsort-with-g_qsort_with_data.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-config-network = %{version}-%{release}

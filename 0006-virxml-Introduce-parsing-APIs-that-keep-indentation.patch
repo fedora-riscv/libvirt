@@ -1,7 +1,7 @@
 From 6371a0d85b6febd8e034eeec02d70c551535ad5b Mon Sep 17 00:00:00 2001
 From: Michal Privoznik <mprivozn@redhat.com>
 Date: Tue, 21 Nov 2023 10:39:58 +0100
-Subject: [PATCH 6/7] virxml: Introduce parsing APIs that keep indentation
+Subject: [PATCH 6/8] virxml: Introduce parsing APIs that keep indentation
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit

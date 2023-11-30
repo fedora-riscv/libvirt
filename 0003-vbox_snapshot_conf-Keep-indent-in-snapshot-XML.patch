@@ -1,7 +1,7 @@
 From ee3f790a24ec16308e016f9e7dc1cc5e29a6a525 Mon Sep 17 00:00:00 2001
 From: Michal Privoznik <mprivozn@redhat.com>
 Date: Tue, 21 Nov 2023 10:40:36 +0100
-Subject: [PATCH 3/7] vbox_snapshot_conf: Keep indent in snapshot XML
+Subject: [PATCH 3/8] vbox_snapshot_conf: Keep indent in snapshot XML
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit

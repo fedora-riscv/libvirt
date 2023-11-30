@@ -1,7 +1,7 @@
 From 09f06f6286f864fefdf4877b5792999e0d4e89d1 Mon Sep 17 00:00:00 2001
 From: Michal Privoznik <mprivozn@redhat.com>
 Date: Mon, 20 Nov 2023 03:18:12 +0100
-Subject: [PATCH 4/7] virxml: include <libxml/xmlsave.h> for
+Subject: [PATCH 4/8] virxml: include <libxml/xmlsave.h> for
  xmlIndentTreeOutput declaration
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8

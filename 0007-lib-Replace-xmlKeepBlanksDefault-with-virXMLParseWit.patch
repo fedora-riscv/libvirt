@@ -1,7 +1,7 @@
 From 215a4afe93c051e35d09fabea19172ab51959737 Mon Sep 17 00:00:00 2001
 From: Michal Privoznik <mprivozn@redhat.com>
 Date: Mon, 20 Nov 2023 16:20:51 +0100
-Subject: [PATCH 7/7] lib: Replace xmlKeepBlanksDefault() with
+Subject: [PATCH 7/8] lib: Replace xmlKeepBlanksDefault() with
  virXMLParseWithIndent()
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8

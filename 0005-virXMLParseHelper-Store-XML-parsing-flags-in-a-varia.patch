@@ -1,7 +1,7 @@
 From 68a14369033486ad9e02cb144cde2aced7351ce2 Mon Sep 17 00:00:00 2001
 From: Michal Privoznik <mprivozn@redhat.com>
 Date: Sat, 18 Nov 2023 04:17:47 +0100
-Subject: [PATCH 5/7] virXMLParseHelper: Store XML parsing flags in a variable
+Subject: [PATCH 5/8] virXMLParseHelper: Store XML parsing flags in a variable
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
