@@ -251,7 +251,14 @@ URL: https://libvirt.org/
 Source: https://download.libvirt.org/%{?mainturl}libvirt-%{version}.tar.xz
 
 # Fix crash with snapshot restore (bz #2247754)
-Patch0001: 0001-qemu_process-fix-crash-in-qemuSaveImageDecompression.patch
+Patch: 0001-qemu_process-fix-crash-in-qemuSaveImageDecompression.patch
+# Fix libxml2 API changes
+Patch: 0002-vbox_snapshot_conf-Parse-XMLs-without-net-access.patch
+Patch: 0003-vbox_snapshot_conf-Keep-indent-in-snapshot-XML.patch
+Patch: 0004-virxml-include-libxml-xmlsave.h-for-xmlIndentTreeOut.patch
+Patch: 0005-virXMLParseHelper-Store-XML-parsing-flags-in-a-varia.patch
+Patch: 0006-virxml-Introduce-parsing-APIs-that-keep-indentation.patch
+Patch: 0007-lib-Replace-xmlKeepBlanksDefault-with-virXMLParseWit.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-config-network = %{version}-%{release}

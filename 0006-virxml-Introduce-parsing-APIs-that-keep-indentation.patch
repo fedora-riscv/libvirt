@@ -1,0 +1,123 @@
+From 6371a0d85b6febd8e034eeec02d70c551535ad5b Mon Sep 17 00:00:00 2001
+From: Michal Privoznik <mprivozn@redhat.com>
+Date: Tue, 21 Nov 2023 10:39:58 +0100
+Subject: [PATCH 6/7] virxml: Introduce parsing APIs that keep indentation
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+When parsing an XML it may be important to keep indentation to
+produce a better looking result when formatting the XML back.
+Just look at all those xmlKeepBlanksDefault() calls just before
+virXMLParse() is called.
+
+Anyway, as of libxml2 commit v2.12.0~108 xmlKeepBlanksDefault()
+is deprecated. Therefore, introduce virXMLParse...WithIndent()
+variants which would do exactly xmlKeepBlanksDefault() did but
+with non-deprecated APIs.
+
+Signed-off-by: Michal Privoznik <mprivozn@redhat.com>
+Reviewed-by: Ján Tomko <jtomko@redhat.com>
+(cherry picked from commit 69958ba3102810bb4f90a91d2f6d9032e1a1da2d)
+---
+ src/util/virxml.c |  9 +++++++--
+ src/util/virxml.h | 29 +++++++++++++++++++++++++----
+ 2 files changed, 32 insertions(+), 6 deletions(-)
+
+diff --git a/src/util/virxml.c b/src/util/virxml.c
+index 027cdb97b9..6d0c8f0311 100644
+--- a/src/util/virxml.c
++++ b/src/util/virxml.c
+@@ -1129,14 +1129,15 @@ virXMLParseHelper(int domcode,
+                   const char *rootelement,
+                   xmlXPathContextPtr *ctxt,
+                   const char *schemafile,
+-                  bool validate)
++                  bool validate,
++                  bool keepindent)
+ {
+     struct virParserData private;
+     g_autoptr(xmlParserCtxt) pctxt = NULL;
+     g_autoptr(xmlDoc) xml = NULL;
+     xmlNodePtr rootnode;
+     const char *docname;
+-    const int parseFlags = XML_PARSE_NONET | XML_PARSE_NOWARNING;
++    int parseFlags = XML_PARSE_NONET | XML_PARSE_NOWARNING;
+ 
+     if (filename)
+         docname = filename;
+@@ -1154,6 +1155,10 @@ virXMLParseHelper(int domcode,
+     pctxt->_private = &private;
+     pctxt->sax->error = catchXMLError;
+ 
++    if (keepindent) {
++        parseFlags |= XML_PARSE_NOBLANKS;
++    }
++
+     if (filename) {
+         xml = xmlCtxtReadFile(pctxt, filename, NULL, parseFlags);
+     } else {
+diff --git a/src/util/virxml.h b/src/util/virxml.h
+index 7af47437bd..03a85bfb25 100644
+--- a/src/util/virxml.h
++++ b/src/util/virxml.h
+@@ -199,7 +199,8 @@ virXMLParseHelper(int domcode,
+                   const char *rootelement,
+                   xmlXPathContextPtr *ctxt,
+                   const char *schemafile,
+-                  bool validate);
++                  bool validate,
++                  bool keepindent);
+ 
+ const char *
+ virXMLPickShellSafeComment(const char *str1,
+@@ -219,7 +220,17 @@ virXMLPickShellSafeComment(const char *str1,
+  * Return the parsed document object, or NULL on failure.
+  */
+ #define virXMLParse(filename, xmlStr, url, rootelement, ctxt, schemafile, validate) \
+-    virXMLParseHelper(VIR_FROM_THIS, filename, xmlStr, url, rootelement, ctxt, schemafile, validate)
++    virXMLParseHelper(VIR_FROM_THIS, filename, xmlStr, url, rootelement, ctxt, schemafile, validate, false)
++
++/**
++ * virXMLParseWithIndent:
++ *
++ * Just like virXMLParse, except indentation is preserved. Should be used when
++ * facing an user provided XML which may be formatted back and keeping verbatim
++ * spacing is necessary (e.g. due to <metadata/>).
++ */
++#define virXMLParseWithIndent(filename, xmlStr, url, rootelement, ctxt, schemafile, validate) \
++    virXMLParseHelper(VIR_FROM_THIS, filename, xmlStr, url, rootelement, ctxt, schemafile, validate, true)
+ 
+ /**
+  * virXMLParseStringCtxt:
+@@ -233,7 +244,17 @@ virXMLPickShellSafeComment(const char *str1,
+  * Return the parsed document object, or NULL on failure.
+  */
+ #define virXMLParseStringCtxt(xmlStr, url, pctxt) \
+-    virXMLParseHelper(VIR_FROM_THIS, NULL, xmlStr, url, NULL, pctxt, NULL, false)
++    virXMLParseHelper(VIR_FROM_THIS, NULL, xmlStr, url, NULL, pctxt, NULL, false, false)
++
++/**
++ * virXMLParseStringCtxtWithIndent:
++ *
++ * Just like virXMLParseStringCtxt, except indentation is preserved.  Should be
++ * used when facing an user provided XML which may be formatted back and
++ * keeping verbatim spacing is necessary (e.g. due to <metadata/>).
++ */
++#define virXMLParseStringCtxtWithIndent(xmlStr, url, pctxt) \
++    virXMLParseHelper(VIR_FROM_THIS, NULL, xmlStr, url, NULL, pctxt, NULL, false, true)
+ 
+ /**
+  * virXMLParseFileCtxt:
+@@ -246,7 +267,7 @@ virXMLPickShellSafeComment(const char *str1,
+  * Return the parsed document object, or NULL on failure.
+  */
+ #define virXMLParseFileCtxt(filename, pctxt) \
+-    virXMLParseHelper(VIR_FROM_THIS, filename, NULL, NULL, NULL, pctxt, NULL, false)
++    virXMLParseHelper(VIR_FROM_THIS, filename, NULL, NULL, NULL, pctxt, NULL, false, false)
+ 
+ int
+ virXMLSaveFile(const char *path,
+-- 
+2.43.0
+
