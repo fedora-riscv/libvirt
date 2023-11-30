@@ -241,7 +241,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 9.9.0
-Release: 2%{?dist}
+Release: 3%{?dist}
 License: GPL-2.0-or-later AND LGPL-2.1-only AND LGPL-2.1-or-later AND OFL-1.1
 URL: https://libvirt.org/
 
@@ -2503,6 +2503,9 @@ exit 0
 
 
 %changelog
+* Thu Nov 30 2023 Richard W.M. Jones <rjones@redhat.com> - 9.9.0-3
+- Bump and rebuild for xen 4.18.0
+
 * Mon Nov 06 2023 Cole Robinson <crobinso@redhat.com> - 9.9.0-2
 - Fix crash with snapshot restore (bz #2247754)
 
