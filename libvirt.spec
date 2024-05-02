@@ -276,8 +276,8 @@
 
 Summary: Library providing a simple virtualization API
 Name: libvirt
-Version: 10.2.0
-Release: 2%{?dist}
+Version: 10.3.0
+Release: 1%{?dist}
 License: GPL-2.0-or-later AND LGPL-2.1-only AND LGPL-2.1-or-later AND OFL-1.1
 URL: https://libvirt.org/
 
@@ -2588,6 +2588,9 @@ exit 0
 
 
 %changelog
+* Thu May  2 2024 Daniel P. Berrangé <berrange@redhat.com> - 10.3.0-1
+- Update to version 10.3.0
+
 * Sat Apr 06 2024 Cole Robinson <crobinso@redhat.com> - 10.2.0-2
 - Rebuild for new libiscsi
 
