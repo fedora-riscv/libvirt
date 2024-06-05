@@ -289,7 +289,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 10.4.0
-Release: 1%{?dist}
+Release: 2%{?dist}
 License: GPL-2.0-or-later AND LGPL-2.1-only AND LGPL-2.1-or-later AND OFL-1.1
 URL: https://libvirt.org/
 
@@ -297,6 +297,8 @@ URL: https://libvirt.org/
     %define mainturl stable_updates/
 %endif
 Source: https://download.libvirt.org/%{?mainturl}libvirt-%{version}.tar.xz
+Patch2: 0001-rpc-avoid-leak-of-GSource-in-use-for-interrupting-ma.patch
+Patch3: 0001-interface-fix-udev-reference-leak-with-invalid-flags.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-config-network = %{version}-%{release}
@@ -2622,6 +2624,10 @@ exit 0
 %endif
 
 %changelog
+* Wed Jun  5 2024 Daniel P. Berrangé <berrange@redhat.com> - 10.4.0-2
+- Fix leak of GSource handle
+- Fix leak of udev reference (rhbz #2266017)
+
 * Wed Jun  5 2024 Daniel P. Berrangé <berrange@redhat.com> - 10.4.0-1
 - Update to version 10.4.0
 - Change virtual network backend from iptables to nftables
