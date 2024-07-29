@@ -430,8 +430,8 @@ BuildRequires: libcurl-devel
 BuildRequires: libwsman-devel >= 2.6.3
     %endif
 BuildRequires: audit-libs-devel
-# we need /usr/sbin/dtrace
 BuildRequires: systemtap-sdt-devel
+BuildRequires: /usr/bin/dtrace
 # For mount/umount in FS driver
 BuildRequires: util-linux
 # For showmount in FS driver (netfs discovery)
@@ -2629,6 +2629,7 @@ exit 0
 %changelog
 * Tue Aug 27 2024 Cole Robinson <crobinso@redhat.com> - 10.6.0-2
 - Fix `virsh domifaddr --source=arp` on kernel 6.10 (bz #2302245)
+- Add new systemtap-sdt-dtrace to build deps
 
 * Tue Aug 06 2024 Cole Robinson <crobinso@redhat.com> - 10.6.0-1
 - Update to version 10.6.0
