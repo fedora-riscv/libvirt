@@ -288,8 +288,8 @@
 
 Summary: Library providing a simple virtualization API
 Name: libvirt
-Version: 10.6.0
-Release: 2%{?dist}
+Version: 10.7.0
+Release: 1%{?dist}
 License: GPL-2.0-or-later AND LGPL-2.1-only AND LGPL-2.1-or-later AND OFL-1.1
 URL: https://libvirt.org/
 
@@ -297,11 +297,6 @@ URL: https://libvirt.org/
     %define mainturl stable_updates/
 %endif
 Source: https://download.libvirt.org/%{?mainturl}libvirt-%{version}.tar.xz
-
-# Fix `virsh domifaddr --source=arp` on kernel 6.10 (bz #2302245)
-Patch0001: 0001-virarptable-Properly-calculate-rtattr-length.patch
-Patch0002: 0002-virarptable-Fix-check-for-message-length.patch
-Patch0003: 0003-virarptable-End-parsing-earlier-in-case-of-NLMSG_DON.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-config-network = %{version}-%{release}
@@ -2627,6 +2622,9 @@ exit 0
 
 
 %changelog
+* Mon Sep 02 2024 Cole Robinson <crobinso@redhat.com> - 10.7.0-1
+- Update to version 10.7.0
+
 * Tue Aug 27 2024 Cole Robinson <crobinso@redhat.com> - 10.6.0-2
 - Fix `virsh domifaddr --source=arp` on kernel 6.10 (bz #2302245)
 - Add new systemtap-sdt-dtrace to build deps
