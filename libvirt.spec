@@ -298,6 +298,8 @@ URL: https://libvirt.org/
 %endif
 Source: https://download.libvirt.org/%{?mainturl}libvirt-%{version}.tar.xz
 
+Patch:  0001-tests-avoid-security_disable-deprecation-warning.patch
+
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-config-network = %{version}-%{release}
 Requires: libvirt-daemon-config-nwfilter = %{version}-%{release}
