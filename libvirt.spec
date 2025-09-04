@@ -1429,7 +1429,13 @@ export SOURCE_DATE_EPOCH=$(stat --printf='%Y' %{_specdir}/libvirt.spec)
            -Drpath=disabled \
            %{?arg_login_shell}
 
+
+%ifarch i686
+# disable parallelization (we get build failures with -j 64 on buildhw)
+%meson_build -j 1
+%else
 %meson_build
+%endif
 %endif
 
 %if %{with_mingw32} || %{with_mingw64}
