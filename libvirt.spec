@@ -289,7 +289,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: 11.7.0
-Release: 1%{?dist}
+Release: 2%{?dist}
 License: GPL-2.0-or-later AND LGPL-2.1-only AND LGPL-2.1-or-later AND OFL-1.1
 URL: https://libvirt.org/
 
@@ -2692,6 +2692,9 @@ exit 0
 
 
 %changelog
+* Thu Sep 04 2025 Adam Williamson <awilliam@redhat.com> - 11.7.0-2
+- Rebuild for libiscsi.so.11
+
 * Tue Sep 02 2025 Cole Robinson <crobinso@redhat.com> - 11.7.0-1
 - Update to version 11.7.0
 
