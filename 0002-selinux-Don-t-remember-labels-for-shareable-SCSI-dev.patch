@@ -1,0 +1,35 @@
+From f4903ebcf7eec5df3261d6267a027735723329e9 Mon Sep 17 00:00:00 2001
+From: Cole Robinson <crobinso@redhat.com>
+Date: Tue, 11 Nov 2025 11:50:06 -0500
+Subject: [PATCH 2/4] selinux: Don't remember labels for shareable SCSI devices
+
+For shareable/readonly devices, label restore is skipped entirely in
+virSecuritySELinuxRestoreSCSILabel. So requesting remember=true here
+doesn't accomplish anything
+
+Reviewed-by: Michal Privoznik <mprivozn@redhat.com>
+Signed-off-by: Cole Robinson <crobinso@redhat.com>
+---
+ src/security/security_selinux.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/security/security_selinux.c b/src/security/security_selinux.c
+index 19e550460c..3a91ea46d3 100644
+--- a/src/security/security_selinux.c
++++ b/src/security/security_selinux.c
+@@ -2171,10 +2171,10 @@ virSecuritySELinuxSetSCSILabel(virSCSIDevice *dev,
+ 
+     if (virSCSIDeviceGetShareable(dev))
+         return virSecuritySELinuxSetFilecon(mgr, file,
+-                                            data->file_context, true);
++                                            data->file_context, false);
+     else if (virSCSIDeviceGetReadonly(dev))
+         return virSecuritySELinuxSetFilecon(mgr, file,
+-                                            data->content_context, true);
++                                            data->content_context, false);
+     else
+         return virSecuritySELinuxSetFilecon(mgr, file,
+                                             secdef->imagelabel, true);
+-- 
+2.51.1
+
