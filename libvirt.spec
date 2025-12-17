@@ -263,8 +263,9 @@
 
 # RHEL releases provide stable tool chains and so it is safe to turn
 # compiler warning into errors without being worried about frequent
-# changes in reported warnings
-%if 0%{?rhel}
+# changes in reported warnings. ELN is a rebuild of Rawhide so should
+# be treated as unstable for this flag
+%if 0%{?rhel} && !0%{?eln}
     %define enable_werror -Dwerror=true
 %else
     %define enable_werror -Dwerror=false -Dgit_werror=disabled
@@ -2690,6 +2691,9 @@ exit 0
 
 
 %changelog
+* Mon Jan 12 2026 Daniel P. Berrangé <berrange@redhat.com> - 11.10.0-3
+- Disable -Werror on ELN
+
 * Thu Jan 08 2026 Richard W.M. Jones <rjones@redhat.com> - 11.10.0-2
 - Rebuild for xen 4.21.0
 
