@@ -3031,3 +3031,6 @@ exit 0
 
 * Fri Jan 15 2021 Daniel P. Berrangé <berrange@redhat.com> - 7.0.0-1
 - Rebase to 7.0.0 release
+%ifarch riscv64
+%define with_hyperv 0
+%endif
